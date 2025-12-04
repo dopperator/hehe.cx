@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - hehe.cx</title>
+    <link rel="icon" type="image/png" href="/src/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #ffd700;
+            --gold-dark: #b8860b;
+            --purple: #8b5cf6;
+            --purple-dark: #6d28d9;
+            --bg-dark: #0a0a0f;
+            --bg-card: #141419;
+            --bg-input: #1c1c24;
+            --text: #f5f5f7;
+            --text-muted: #71717a;
+            --border: rgba(255, 255, 255, 0.08);
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 260px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .sidebar-logo:hover {
+            opacity: 0.8;
+        }
+
+        .sidebar-logo img {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+        }
+
+        .sidebar-logo span {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.05));
+            color: var(--purple);
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .sidebar-footer {
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .user-avatar-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--purple), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1rem;
+            overflow: hidden;
+        }
+
+        .user-avatar-small img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-link {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .user-plan {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .user-plan.premium {
+            color: var(--purple);
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main {
+            margin-left: 260px;
+            padding: 32px;
+            min-height: 100vh;
+        }
+
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .main-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+            color: #fff;
+        }
+
+        .btn-purple:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 32px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Form elements */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--purple);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 6px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Toggle */
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: var(--bg-input);
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .toggle-info h4 {
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .toggle-info p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .toggle {
+            position: relative;
+            width: 48px;
+            height: 26px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border);
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: var(--text-muted);
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle input:checked + .toggle-slider {
+            background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+            border-color: var(--purple);
+        }
+
+        .toggle input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+            background-color: white;
+        }
+
+        /* Avatar Upload */
+        .avatar-upload {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--purple), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            overflow: hidden;
+            border: 3px solid var(--border);
+        }
+
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-actions {
+            flex: 1;
+        }
+
+        .avatar-actions h4 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .avatar-actions p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Background Options */
+        .bg-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .bg-option {
+            padding: 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .bg-option:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .bg-option.active {
+            border-color: var(--purple);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .bg-option-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .bg-option-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* Gradient Picker */
+        .gradient-picker {
+            display: none;
+            gap: 16px;
+            padding: 16px;
+            background: var(--bg-input);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .gradient-picker.active {
+            display: flex;
+        }
+
+        .color-picker-group {
+            flex: 1;
+        }
+
+        .color-picker-group label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .color-picker-group input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        /* Links Section */
+        .links-container {
+            min-height: 200px;
+        }
+
+        .link-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-input);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .link-item:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .link-drag {
+            cursor: grab;
+            color: var(--text-muted);
+            padding: 4px;
+        }
+
+        .link-drag:active {
+            cursor: grabbing;
+        }
+
+        .link-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(139, 92, 246, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .link-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .link-platform {
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-transform: capitalize;
+        }
+
+        .link-url {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .link-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .link-actions button {
+            padding: 8px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .link-actions button:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        .link-actions button.delete:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Add Link Form */
+        .add-link-form {
+            display: none;
+            padding: 20px;
+            background: var(--bg-input);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .add-link-form.active {
+            display: block;
+        }
+
+        .add-link-form h4 {
+            margin-bottom: 16px;
+            font-size: 1rem;
+        }
+
+        .platform-select {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .platform-option {
+            padding: 12px 8px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+        }
+
+        .platform-option:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .platform-option.selected {
+            border-color: var(--purple);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .platform-option .icon {
+            width: 28px;
+            height: 28px;
+            margin-bottom: 6px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+
+        .empty-links {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-links svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Preview Panel */
+        .preview-panel {
+            position: sticky;
+            top: 32px;
+        }
+
+        .phone-frame {
+            background: #000;
+            border-radius: 40px;
+            padding: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .phone-screen {
+            background: var(--bg-dark);
+            border-radius: 32px;
+            min-height: 600px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .preview-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--purple), var(--gold));
+        }
+
+        .preview-bg.image {
+            background-size: cover;
+            background-position: center;
+        }
+
+        .preview-content {
+            position: relative;
+            z-index: 1;
+            padding: 40px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 600px;
+        }
+
+        .preview-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            overflow: hidden;
+        }
+
+        .preview-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .preview-userid {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px 12px;
+            border-radius: 100px;
+        }
+
+        .preview-bio {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            margin-bottom: 24px;
+            max-width: 280px;
+        }
+
+        .preview-links {
+            width: 100%;
+        }
+
+        .preview-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            margin-bottom: 10px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .preview-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .preview-link-icon {
+            font-size: 1.2rem;
+        }
+
+        .preview-link-text {
+            flex: 1;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .toast.error {
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .preview-panel {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .mobile-header {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                margin-bottom: 24px;
+            }
+
+            .menu-toggle {
+                display: flex;
+                padding: 10px;
+                background: var(--bg-card);
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                color: var(--text);
+                cursor: pointer;
+            }
+
+            .platform-select {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Premium badge */
+        .premium-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 100px;
+            margin-left: 8px;
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--purple);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <aside class="sidebar" id="sidebar">
+        <a href="/" class="sidebar-logo">
+            <img src="/src/logo.png" alt="hehe.cx">
+            <span>hehe.cx</span>
+        </a>
+        
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-section="profile">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>
+                </svg>
+                Profile
+            </a>
+            <a href="#" class="nav-item" data-section="links">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+                Links
+            </a>
+            <a href="#" class="nav-item" data-section="appearance">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+                Appearance
+            </a>
+            <a href="#" class="nav-item" data-section="premium" id="premiumNavItem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                Premium
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar-small" id="sidebarAvatar">
+                    <span id="sidebarAvatarInitial">?</span>
+                </div>
+                <div class="user-info">
+                    <div class="user-name" id="sidebarName">Loading...</div>
+                    <div class="user-link">hehe.cx/<span id="sidebarUsername">...</span></div>
+                    <div class="user-plan" id="sidebarPlan">Free Plan</div>
+                </div>
+            </div>
+            <button class="btn btn-ghost" style="width: 100%; margin-top: 12px;" onclick="logout()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Log Out
+            </button>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="main-header">
+            <h1>Dashboard</h1>
+            <div class="header-actions">
+                <a href="#" class="btn btn-ghost" id="viewPageBtn" target="_blank">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                    View My Page
+                </a>
+                <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="content-main">
+                <!-- Profile Section -->
+                <div class="card" id="profileSection">
+                    <div class="card-header">
+                        <h3 class="card-title">Profile</h3>
+                    </div>
+                    
+                    <div class="avatar-upload">
+                        <div class="avatar-preview" id="avatarPreview">
+                            <span id="avatarInitial">?</span>
+                        </div>
+                        <div class="avatar-actions">
+                            <h4>Profile Picture</h4>
+                            <p id="avatarInfo">PNG only, max 10MB<br><span class="premium-info" style="display: none;">Premium: GIF allowed, max 50MB</span></p>
+                            <input type="file" id="avatarInput" class="file-input" accept=".png">
+                            <button class="btn btn-ghost" onclick="document.getElementById('avatarInput').click()">Upload Image</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="displayName">Display Name</label>
+                        <input type="text" id="displayName" placeholder="Your name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bio">Bio</label>
+                        <textarea id="bio" placeholder="Tell the world about yourself..."></textarea>
+                        <small>Brief description that appears under your name</small>
+                    </div>
+
+                    <div class="toggle-group">
+                        <div class="toggle-info">
+                            <h4>Show User ID</h4>
+                            <p>Display your unique user number: #<span id="userIdDisplay">?</span></p>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="showUserId">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Links Section -->
+                <div class="card" id="linksSection" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">Your Links</h3>
+                        <button class="btn btn-purple" onclick="toggleAddLink()">+ Add Link</button>
+                    </div>
+
+                    <div class="add-link-form" id="addLinkForm">
+                        <h4>Add a new link</h4>
+                        <div class="platform-select" id="platformSelect">
+                            <div class="platform-option" data-platform="bluesky">
+                                <img src="/src/logos/bluesky-512.png" class="icon" alt="Bluesky">
+                                Bluesky
+                            </div>
+                            <div class="platform-option" data-platform="cashapp">
+                                <img src="/src/logos/cashapp-512.png" class="icon" alt="Cash App">
+                                Cash App
+                            </div>
+                            <div class="platform-option" data-platform="deviantart">
+                                <img src="/src/logos/deviantart-512.png" class="icon" alt="DeviantArt">
+                                DeviantArt
+                            </div>
+                            <div class="platform-option" data-platform="discord">
+                                <img src="/src/logos/discord-700.png" class="icon" alt="Discord">
+                                Discord
+                            </div>
+                            <div class="platform-option" data-platform="github">
+                                <img src="/src/logos/github-512.png" class="icon" alt="GitHub">
+                                GitHub
+                            </div>
+                            <div class="platform-option" data-platform="instagram">
+                                <img src="/src/logos/instagram-2101.png" class="icon" alt="Instagram">
+                                Instagram
+                            </div>
+                            <div class="platform-option" data-platform="kick">
+                                <img src="/src/logos/kick-2000-667.png" class="icon" alt="Kick">
+                                Kick
+                            </div>
+                            <div class="platform-option" data-platform="linkedin">
+                                <img src="/src/logos/linkedin-512.png" class="icon" alt="LinkedIn">
+                                LinkedIn
+                            </div>
+                            <div class="platform-option" data-platform="pinterest">
+                                <img src="/src/logos/pinterest-1000.png" class="icon" alt="Pinterest">
+                                Pinterest
+                            </div>
+                            <div class="platform-option" data-platform="reddit">
+                                <img src="/src/logos/reddit-512.png" class="icon" alt="Reddit">
+                                Reddit
+                            </div>
+                            <div class="platform-option" data-platform="roblox">
+                                <img src="/src/logos/roblox-2000.png" class="icon" alt="Roblox">
+                                Roblox
+                            </div>
+                            <div class="platform-option" data-platform="snapchat">
+                                <img src="/src/logos/snapchat-200.png" class="icon" alt="Snapchat">
+                                Snapchat
+                            </div>
+                            <div class="platform-option" data-platform="soundcloud">
+                                <img src="/src/logos/soundcloud-512.png" class="icon" alt="SoundCloud">
+                                SoundCloud
+                            </div>
+                            <div class="platform-option" data-platform="spotify">
+                                <img src="/src/logos/spotify-512.png" class="icon" alt="Spotify">
+                                Spotify
+                            </div>
+                            <div class="platform-option" data-platform="steam">
+                                <img src="/src/logos/steam-512.png" class="icon" alt="Steam">
+                                Steam
+                            </div>
+                            <div class="platform-option" data-platform="tiktok">
+                                <img src="/src/logos/tiktok-512.png" class="icon" alt="TikTok">
+                                TikTok
+                            </div>
+                            <div class="platform-option" data-platform="venmo">
+                                <img src="/src/logos/venmo-512.png" class="icon" alt="Venmo">
+                                Venmo
+                            </div>
+                            <div class="platform-option" data-platform="x">
+                                <img src="/src/logos/x-500.png" class="icon" alt="X">
+                                X
+                            </div>
+                            <div class="platform-option" data-platform="youtube">
+                                <img src="/src/logos/youtube-512.png" class="icon" alt="YouTube">
+                                YouTube
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="linkUrl">URL</label>
+                            <input type="url" id="linkUrl" placeholder="https://...">
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <button class="btn btn-ghost" onclick="toggleAddLink()">Cancel</button>
+                            <button class="btn btn-primary" onclick="addLink()">Add Link</button>
+                        </div>
+                    </div>
+
+                    <div class="links-container" id="linksContainer">
+                        <div class="empty-links" id="emptyLinks">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                            </svg>
+                            <p>No links yet. Add your first link above!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Appearance Section -->
+                <div class="card" id="appearanceSection" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">Background</h3>
+                    </div>
+
+                    <div class="bg-options">
+                        <div class="bg-option active" data-type="gradient">
+                            <div class="bg-option-icon">🎨</div>
+                            <div class="bg-option-label">Gradient</div>
+                        </div>
+                        <div class="bg-option" data-type="image">
+                            <div class="bg-option-icon">🖼️</div>
+                            <div class="bg-option-label">Image</div>
+                        </div>
+                    </div>
+
+                    <div class="gradient-picker active" id="gradientPicker">
+                        <div class="color-picker-group">
+                            <label>Start Color</label>
+                            <input type="color" id="gradientStart" value="#667eea">
+                        </div>
+                        <div class="color-picker-group">
+                            <label>End Color</label>
+                            <input type="color" id="gradientEnd" value="#764ba2">
+                        </div>
+                    </div>
+
+                    <div id="bgImageUpload" style="display: none;">
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
+                            Upload a background image. PNG/JPG only, max 10MB.<br>
+                            <span class="premium-info" style="display: none;">Premium: GIF allowed, max 50MB</span>
+                        </p>
+                        <input type="file" id="bgInput" class="file-input" accept=".png,.jpg,.jpeg">
+                        <button class="btn btn-ghost" onclick="document.getElementById('bgInput').click()">Upload Background</button>
+                    </div>
+                </div>
+
+                <!-- Premium Section -->
+                <div class="card" id="premiumSection" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">Premium</h3>
+                    </div>
+                    
+                    <!-- Non-premium user view -->
+                    <div id="premiumUpgrade">
+                        <div style="text-align: center; padding: 20px 0;">
+                            <div style="font-size: 3rem; margin-bottom: 16px;">⭐</div>
+                            <h3 style="font-size: 1.5rem; margin-bottom: 12px;">Upgrade to Premium</h3>
+                            <p style="color: var(--text-muted); margin-bottom: 24px; line-height: 1.6;">
+                                Unlock exclusive features to make your page stand out!
+                            </p>
+                            
+                            <div style="text-align: left; background: var(--bg-input); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                                    <span style="font-size: 1.25rem;">📁</span>
+                                    <div>
+                                        <strong>50MB Upload Limit</strong>
+                                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Upload larger, higher quality images</p>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                                    <span style="font-size: 1.25rem;">🎬</span>
+                                    <div>
+                                        <strong>Animated GIF Backgrounds</strong>
+                                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Make your page come alive with animated backgrounds</p>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-size: 1.25rem;">🖼️</span>
+                                    <div>
+                                        <strong>GIF Profile Pictures</strong>
+                                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Stand out with an animated avatar</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <a href="/premium" class="btn btn-primary" style="padding: 16px 32px; font-size: 1.05rem; text-decoration: none;">
+                                Get Premium
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Premium user view -->
+                    <div id="premiumActive" style="display: none;">
+                        <div style="text-align: center; padding: 20px 0;">
+                            <div style="font-size: 3rem; margin-bottom: 16px;">👑</div>
+                            <h3 style="font-size: 1.5rem; margin-bottom: 12px; background: linear-gradient(135deg, var(--gold), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">You're Premium!</h3>
+                            <p style="color: var(--text-muted); margin-bottom: 24px;">
+                                Thank you for supporting hehe.cx! You have access to all premium features.
+                            </p>
+                            
+                            <div style="text-align: left; background: var(--bg-input); border-radius: 12px; padding: 20px;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                                    <span style="color: var(--success);">✓</span>
+                                    <span>50MB upload limit</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                                    <span style="color: var(--success);">✓</span>
+                                    <span>Animated GIF backgrounds</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="color: var(--success);">✓</span>
+                                    <span>GIF profile pictures</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Panel -->
+            <div class="preview-panel">
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="preview-bg" id="previewBg"></div>
+                        <div class="preview-content">
+                            <div class="preview-avatar" id="previewAvatar">
+                                <span id="previewAvatarInitial">?</span>
+                            </div>
+                            <div class="preview-name" id="previewName">Your Name</div>
+                            <div class="preview-userid" id="previewUserId" style="display: none;">#1</div>
+                            <div class="preview-bio" id="previewBio">Your bio will appear here</div>
+                            <div class="preview-links" id="previewLinks"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast" id="toast">
+        <span id="toastMessage">Saved successfully!</span>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let links = [];
+        let selectedPlatform = null;
+
+        // Platform icons map
+        // Platform logos - using images from src/logos/
+        const platformLogos = {
+            bluesky: '/src/logos/bluesky-512.png',
+            cashapp: '/src/logos/cashapp-512.png',
+            deviantart: '/src/logos/deviantart-512.png',
+            discord: '/src/logos/discord-700.png',
+            github: '/src/logos/github-512.png',
+            instagram: '/src/logos/instagram-2101.png',
+            kick: '/src/logos/kick-2000-667.png',
+            linkedin: '/src/logos/linkedin-512.png',
+            pinterest: '/src/logos/pinterest-1000.png',
+            reddit: '/src/logos/reddit-512.png',
+            roblox: '/src/logos/roblox-2000.png',
+            snapchat: '/src/logos/snapchat-200.png',
+            soundcloud: '/src/logos/soundcloud-512.png',
+            spotify: '/src/logos/spotify-512.png',
+            steam: '/src/logos/steam-512.png',
+            tiktok: '/src/logos/tiktok-512.png',
+            venmo: '/src/logos/venmo-512.png',
+            x: '/src/logos/x-500.png',
+            youtube: '/src/logos/youtube-512.png'
+        };
+
+        // Helper to get platform icon HTML
+        function getPlatformIcon(platform, size = 24) {
+            const logo = platformLogos[platform];
+            if (logo) {
+                return `<img src="${logo}" alt="${platform}" style="width: ${size}px; height: ${size}px; object-fit: contain; border-radius: 4px;">`;
+            }
+            return '🔗';
+        }
+
+        // Check auth and load data
+        async function init() {
+            try {
+                const res = await fetch('/api/auth/status');
+                const data = await res.json();
+
+                if (!data.authenticated) {
+                    window.location.href = '/';
+                    return;
+                }
+
+                currentUser = data.user;
+                updateUI();
+                await loadLinks();
+                
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            } catch (error) {
+                console.error('Init error:', error);
+                window.location.href = '/';
+            }
+        }
+
+        function updateUI() {
+            const initial = (currentUser.display_name || currentUser.username)[0].toUpperCase();
+            
+            // Sidebar
+            document.getElementById('sidebarName').textContent = currentUser.display_name || currentUser.username;
+            document.getElementById('sidebarUsername').textContent = currentUser.username;
+            document.getElementById('sidebarAvatarInitial').textContent = initial;
+            
+            // Show plan
+            const planEl = document.getElementById('sidebarPlan');
+            if (currentUser.is_premium) {
+                planEl.textContent = 'Premium Plan';
+                planEl.classList.add('premium');
+            } else {
+                planEl.textContent = 'Free Plan';
+                planEl.classList.remove('premium');
+            }
+            
+            if (currentUser.avatar) {
+                document.getElementById('sidebarAvatar').innerHTML = `<img src="/${currentUser.avatar}" alt="">`;
+            }
+
+            // Form fields
+            document.getElementById('displayName').value = currentUser.display_name || '';
+            document.getElementById('bio').value = currentUser.bio || '';
+            document.getElementById('showUserId').checked = currentUser.show_userid;
+            document.getElementById('userIdDisplay').textContent = currentUser.id;
+            document.getElementById('viewPageBtn').href = '/' + currentUser.username;
+
+            // Avatar
+            document.getElementById('avatarInitial').textContent = initial;
+            if (currentUser.avatar) {
+                document.getElementById('avatarPreview').innerHTML = `<img src="/${currentUser.avatar}" alt="">`;
+            }
+
+            // Background
+            document.getElementById('gradientStart').value = currentUser.gradient_start || '#667eea';
+            document.getElementById('gradientEnd').value = currentUser.gradient_end || '#764ba2';
+
+            if (currentUser.background_type === 'image') {
+                document.querySelector('.bg-option[data-type="gradient"]').classList.remove('active');
+                document.querySelector('.bg-option[data-type="image"]').classList.add('active');
+                document.getElementById('gradientPicker').classList.remove('active');
+                document.getElementById('bgImageUpload').style.display = 'block';
+            }
+
+            // Premium features
+            if (currentUser.is_premium) {
+                document.getElementById('avatarInput').accept = '.png,.gif';
+                document.getElementById('bgInput').accept = '.png,.jpg,.jpeg,.gif';
+                document.querySelectorAll('.premium-info').forEach(el => el.style.display = 'inline');
+                document.getElementById('premiumUpgrade').style.display = 'none';
+                document.getElementById('premiumActive').style.display = 'block';
+                document.getElementById('premiumNavItem').innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    Premium
+                `;
+            }
+
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const name = document.getElementById('displayName').value || currentUser.username;
+            const bio = document.getElementById('bio').value;
+            const showUserId = document.getElementById('showUserId').checked;
+            const gradientStart = document.getElementById('gradientStart').value;
+            const gradientEnd = document.getElementById('gradientEnd').value;
+
+            document.getElementById('previewName').textContent = name;
+            document.getElementById('previewBio').textContent = bio || 'Your bio will appear here';
+            document.getElementById('previewBio').style.display = bio ? 'block' : 'none';
+
+            const userIdEl = document.getElementById('previewUserId');
+            userIdEl.textContent = '#' + currentUser.id;
+            userIdEl.style.display = showUserId ? 'block' : 'none';
+
+            // Avatar
+            const initial = name[0].toUpperCase();
+            if (currentUser.avatar) {
+                document.getElementById('previewAvatar').innerHTML = `<img src="/${currentUser.avatar}" alt="">`;
+            } else {
+                document.getElementById('previewAvatarInitial').textContent = initial;
+            }
+
+            // Background
+            const previewBg = document.getElementById('previewBg');
+            const bgType = document.querySelector('.bg-option.active').dataset.type;
+            
+            if (bgType === 'gradient') {
+                previewBg.style.backgroundImage = 'none';
+                previewBg.style.background = `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})`;
+                previewBg.classList.remove('image');
+            } else if (currentUser.background) {
+                previewBg.style.background = 'none';
+                previewBg.style.backgroundImage = `url(/${currentUser.background})`;
+                previewBg.style.backgroundSize = 'cover';
+                previewBg.style.backgroundPosition = 'center';
+                previewBg.classList.add('image');
+            }
+
+            // Links
+            renderPreviewLinks();
+        }
+
+        function renderPreviewLinks() {
+            const container = document.getElementById('previewLinks');
+            container.innerHTML = links.filter(l => l.is_active).map(link => `
+                <a href="${link.url}" class="preview-link" target="_blank">
+                    <span class="preview-link-icon">${getPlatformIcon(link.platform, 20)}</span>
+                    <span class="preview-link-text">${link.platform}</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </a>
+            `).join('');
+        }
+
+        async function loadLinks() {
+            try {
+                const res = await fetch('/api/links');
+                links = await res.json();
+                renderLinks();
+                renderPreviewLinks();
+            } catch (error) {
+                console.error('Load links error:', error);
+            }
+        }
+
+        function renderLinks() {
+            const container = document.getElementById('linksContainer');
+            const empty = document.getElementById('emptyLinks');
+
+            if (links.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+
+            empty.style.display = 'none';
+            container.innerHTML = links.map(link => `
+                <div class="link-item" data-id="${link.id}">
+                    <div class="link-drag">⋮⋮</div>
+                    <div class="link-icon">${getPlatformIcon(link.platform, 24)}</div>
+                    <div class="link-info">
+                        <div class="link-platform">${link.platform}</div>
+                        <div class="link-url">${link.url}</div>
+                    </div>
+                    <div class="link-actions">
+                        <button onclick="toggleLinkActive(${link.id})" title="${link.is_active ? 'Disable' : 'Enable'}">
+                            ${link.is_active ? '👁️' : '👁️‍🗨️'}
+                        </button>
+                        <button class="delete" onclick="deleteLink(${link.id})" title="Delete">🗑️</button>
+                    </div>
+                </div>
+            `).join('') + empty.outerHTML;
+        }
+
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = item.dataset.section;
+                
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+
+                document.getElementById('profileSection').style.display = section === 'profile' ? 'block' : 'none';
+                document.getElementById('linksSection').style.display = section === 'links' ? 'block' : 'none';
+                document.getElementById('appearanceSection').style.display = section === 'appearance' ? 'block' : 'none';
+                document.getElementById('premiumSection').style.display = section === 'premium' ? 'block' : 'none';
+            });
+        });
+
+        // Background type toggle
+        document.querySelectorAll('.bg-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.bg-option').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+
+                const type = option.dataset.type;
+                document.getElementById('gradientPicker').classList.toggle('active', type === 'gradient');
+                document.getElementById('bgImageUpload').style.display = type === 'image' ? 'block' : 'none';
+                
+                updatePreview();
+            });
+        });
+
+        // Platform selection
+        document.querySelectorAll('.platform-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.platform-option').forEach(o => o.classList.remove('selected'));
+                option.classList.add('selected');
+                selectedPlatform = option.dataset.platform;
+            });
+        });
+
+        // Live preview updates
+        document.getElementById('displayName').addEventListener('input', updatePreview);
+        document.getElementById('bio').addEventListener('input', updatePreview);
+        document.getElementById('showUserId').addEventListener('change', updatePreview);
+        document.getElementById('gradientStart').addEventListener('input', updatePreview);
+        document.getElementById('gradientEnd').addEventListener('input', updatePreview);
+
+        // File uploads
+        document.getElementById('avatarInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            try {
+                const res = await fetch('/api/profile/avatar', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    currentUser.avatar = data.avatar;
+                    document.getElementById('avatarPreview').innerHTML = `<img src="/${data.avatar}" alt="">`;
+                    document.getElementById('sidebarAvatar').innerHTML = `<img src="/${data.avatar}" alt="">`;
+                    updatePreview();
+                    showToast('Avatar uploaded!', 'success');
+                } else {
+                    showToast(data.error || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                showToast('Upload failed', 'error');
+            }
+        });
+
+        document.getElementById('bgInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('background', file);
+
+            try {
+                const res = await fetch('/api/profile/background', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    currentUser.background = data.background;
+                    currentUser.background_type = 'image';
+                    updatePreview();
+                    showToast('Background uploaded!', 'success');
+                } else {
+                    showToast(data.error || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                showToast('Upload failed', 'error');
+            }
+        });
+
+        // Link functions
+        function toggleAddLink() {
+            document.getElementById('addLinkForm').classList.toggle('active');
+            selectedPlatform = null;
+            document.querySelectorAll('.platform-option').forEach(o => o.classList.remove('selected'));
+            document.getElementById('linkUrl').value = '';
+        }
+
+        async function addLink() {
+            if (!selectedPlatform) {
+                showToast('Please select a platform', 'error');
+                return;
+            }
+
+            const url = document.getElementById('linkUrl').value;
+            if (!url) {
+                showToast('Please enter a URL', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/links', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ platform: selectedPlatform, url })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    links.push(data.link);
+                    renderLinks();
+                    renderPreviewLinks();
+                    toggleAddLink();
+                    showToast('Link added!', 'success');
+                } else {
+                    showToast(data.error || 'Failed to add link', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to add link', 'error');
+            }
+        }
+
+        async function toggleLinkActive(id) {
+            const link = links.find(l => l.id === id);
+            if (!link) return;
+
+            try {
+                const res = await fetch(`/api/links/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_active: link.is_active ? 0 : 1 })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    link.is_active = data.link.is_active;
+                    renderLinks();
+                    renderPreviewLinks();
+                }
+            } catch (error) {
+                showToast('Failed to update link', 'error');
+            }
+        }
+
+        async function deleteLink(id) {
+            if (!confirm('Delete this link?')) return;
+
+            try {
+                const res = await fetch(`/api/links/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+
+                if (data.success) {
+                    links = links.filter(l => l.id !== id);
+                    renderLinks();
+                    renderPreviewLinks();
+                    showToast('Link deleted', 'success');
+                }
+            } catch (error) {
+                showToast('Failed to delete link', 'error');
+            }
+        }
+
+        async function saveProfile() {
+            const bgType = document.querySelector('.bg-option.active').dataset.type;
+            
+            try {
+                const res = await fetch('/api/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        display_name: document.getElementById('displayName').value,
+                        bio: document.getElementById('bio').value,
+                        show_userid: document.getElementById('showUserId').checked,
+                        background_type: bgType,
+                        gradient_start: document.getElementById('gradientStart').value,
+                        gradient_end: document.getElementById('gradientEnd').value
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    currentUser = data.user;
+                    showToast('Profile saved!', 'success');
+                } else {
+                    showToast(data.error || 'Failed to save', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to save', 'error');
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = 'toast ' + type;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>
+

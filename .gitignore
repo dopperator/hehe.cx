@@ -1,0 +1,7 @@
+node_modules/
+hehecx.db
+uploads/
+.env
+.env.local
+*.log
+

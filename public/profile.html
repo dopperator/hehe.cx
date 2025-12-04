@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading... - hehe.cx</title>
+    <link rel="icon" type="image/png" href="/src/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #ffd700;
+            --purple: #8b5cf6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Background */
+        .page-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .page-bg.image {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .page-bg::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.2) 100%);
+        }
+
+        /* Profile Content */
+        .profile-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 60px 24px 40px;
+            min-height: 100vh;
+        }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .display-name {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+            animation: fadeInUp 0.6s ease-out 0.1s both;
+        }
+
+        .user-id {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 14px;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 100px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 16px;
+            animation: fadeInUp 0.6s ease-out 0.15s both;
+        }
+
+        .bio {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            max-width: 400px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+            text-shadow: 0 1px 10px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        /* Links */
+        .links {
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .link-button {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 0.5s ease-out both;
+        }
+
+        .link-button:nth-child(1) { animation-delay: 0.25s; }
+        .link-button:nth-child(2) { animation-delay: 0.3s; }
+        .link-button:nth-child(3) { animation-delay: 0.35s; }
+        .link-button:nth-child(4) { animation-delay: 0.4s; }
+        .link-button:nth-child(5) { animation-delay: 0.45s; }
+        .link-button:nth-child(6) { animation-delay: 0.5s; }
+        .link-button:nth-child(7) { animation-delay: 0.55s; }
+        .link-button:nth-child(8) { animation-delay: 0.6s; }
+
+        .link-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .link-button:active {
+            transform: translateY(-1px) scale(1.01);
+        }
+
+        .link-icon {
+            font-size: 1.4rem;
+            width: 32px;
+            text-align: center;
+        }
+
+        .link-text {
+            flex: 1;
+            font-size: 1.05rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .link-arrow {
+            opacity: 0.6;
+            transition: all 0.2s;
+        }
+
+        .link-button:hover .link-arrow {
+            opacity: 1;
+            transform: translateX(4px);
+        }
+
+        /* Footer */
+        .profile-footer {
+            padding: 30px 24px;
+            text-align: center;
+            animation: fadeIn 0.6s ease-out 0.7s both;
+        }
+
+        .profile-footer a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .profile-footer a:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .profile-footer img {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            opacity: 0.8;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Loading state */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Premium badge effect */
+        .premium-avatar {
+            position: relative;
+        }
+
+        .premium-avatar::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            background: linear-gradient(135deg, var(--gold), var(--purple), var(--gold));
+            background-size: 200% 200%;
+            border-radius: 50%;
+            z-index: -1;
+            animation: premiumGlow 3s ease infinite;
+        }
+
+        @keyframes premiumGlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .profile-container {
+                padding: 40px 20px 30px;
+            }
+
+            .avatar {
+                width: 100px;
+                height: 100px;
+                font-size: 2.5rem;
+            }
+
+            .display-name {
+                font-size: 1.75rem;
+            }
+
+            .bio {
+                font-size: 1rem;
+            }
+
+            .link-button {
+                padding: 14px 20px;
+            }
+        }
+
+        /* Share button */
+        .share-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .share-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+
+        .share-tooltip {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .share-btn.copied .share-tooltip {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-bg" id="pageBg"></div>
+
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="profile-container hidden" id="profileContent">
+        <button class="share-btn" onclick="shareProfile()" title="Share profile">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="18" cy="5" r="3"/>
+                <circle cx="6" cy="12" r="3"/>
+                <circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            <span class="share-tooltip">Copied to clipboard!</span>
+        </button>
+
+        <div class="avatar" id="avatar">
+            <span id="avatarInitial">?</span>
+        </div>
+        <h1 class="display-name" id="displayName">Loading...</h1>
+        <div class="user-id hidden" id="userId">#1</div>
+        <p class="bio hidden" id="bio"></p>
+        <div class="links" id="links"></div>
+    </div>
+
+    <footer class="profile-footer hidden" id="footer">
+        <a href="/">
+            <img src="/src/logo.png" alt="hehe.cx">
+            Create your own hehe.cx
+        </a>
+    </footer>
+
+    <script>
+        // Platform logos
+        const platformLogos = {
+            bluesky: '/src/logos/bluesky-512.png',
+            cashapp: '/src/logos/cashapp-512.png',
+            deviantart: '/src/logos/deviantart-512.png',
+            discord: '/src/logos/discord-700.png',
+            github: '/src/logos/github-512.png',
+            instagram: '/src/logos/instagram-2101.png',
+            kick: '/src/logos/kick-2000-667.png',
+            linkedin: '/src/logos/linkedin-512.png',
+            pinterest: '/src/logos/pinterest-1000.png',
+            reddit: '/src/logos/reddit-512.png',
+            roblox: '/src/logos/roblox-2000.png',
+            snapchat: '/src/logos/snapchat-200.png',
+            soundcloud: '/src/logos/soundcloud-512.png',
+            spotify: '/src/logos/spotify-512.png',
+            steam: '/src/logos/steam-512.png',
+            tiktok: '/src/logos/tiktok-512.png',
+            venmo: '/src/logos/venmo-512.png',
+            x: '/src/logos/x-500.png',
+            youtube: '/src/logos/youtube-512.png'
+        };
+
+        function getPlatformIcon(platform) {
+            const logo = platformLogos[platform];
+            if (logo) {
+                return `<img src="${logo}" alt="${platform}" style="width: 24px; height: 24px; object-fit: contain; border-radius: 4px;">`;
+            }
+            return '🔗';
+        }
+
+        async function loadProfile() {
+            const username = window.location.pathname.slice(1);
+            
+            try {
+                const res = await fetch(`/api/profile/${username}`);
+                
+                if (!res.ok) {
+                    window.location.href = '/404.html';
+                    return;
+                }
+
+                const data = await res.json();
+                const { user, links } = data;
+
+                // Update page title
+                document.title = `${user.display_name || user.username} - hehe.cx`;
+
+                // Background
+                const pageBg = document.getElementById('pageBg');
+                if (user.background_type === 'image' && user.background) {
+                    pageBg.style.backgroundImage = `url(/${user.background})`;
+                    pageBg.classList.add('image');
+                } else {
+                    pageBg.style.background = `linear-gradient(135deg, ${user.gradient_start || '#667eea'} 0%, ${user.gradient_end || '#764ba2'} 100%)`;
+                }
+
+                // Avatar
+                const avatar = document.getElementById('avatar');
+                const initial = (user.display_name || user.username)[0].toUpperCase();
+                
+                if (user.avatar) {
+                    avatar.innerHTML = `<img src="/${user.avatar}" alt="${user.display_name || user.username}">`;
+                } else {
+                    document.getElementById('avatarInitial').textContent = initial;
+                }
+
+                if (user.is_premium) {
+                    avatar.classList.add('premium-avatar');
+                }
+
+                // Name
+                document.getElementById('displayName').textContent = user.display_name || user.username;
+
+                // User ID
+                if (user.show_userid) {
+                    const userIdEl = document.getElementById('userId');
+                    userIdEl.textContent = `#${user.id}`;
+                    userIdEl.classList.remove('hidden');
+                }
+
+                // Bio
+                if (user.bio) {
+                    const bioEl = document.getElementById('bio');
+                    bioEl.textContent = user.bio;
+                    bioEl.classList.remove('hidden');
+                }
+
+                // Links
+                const linksContainer = document.getElementById('links');
+                linksContainer.innerHTML = links.map(link => `
+                    <a href="${link.url}" class="link-button" target="_blank" rel="noopener noreferrer">
+                        <span class="link-icon">${getPlatformIcon(link.platform)}</span>
+                        <span class="link-text">${link.platform}</span>
+                        <svg class="link-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </a>
+                `).join('');
+
+                // Show content
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('profileContent').classList.remove('hidden');
+                document.getElementById('footer').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                window.location.href = '/404.html';
+            }
+        }
+
+        function shareProfile() {
+            const url = window.location.href;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: document.title,
+                    url: url
+                });
+            } else {
+                navigator.clipboard.writeText(url).then(() => {
+                    const btn = document.querySelector('.share-btn');
+                    btn.classList.add('copied');
+                    setTimeout(() => btn.classList.remove('copied'), 2000);
+                });
+            }
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>
+

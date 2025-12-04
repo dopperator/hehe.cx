@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium - hehe.cx</title>
+    <link rel="icon" type="image/png" href="/src/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #ffd700;
+            --gold-dark: #b8860b;
+            --purple: #8b5cf6;
+            --purple-dark: #6d28d9;
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --text: #f5f5f7;
+            --text-muted: #a1a1aa;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-gradient::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 30% 70%, rgba(255, 215, 0, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.08) 0%, transparent 40%);
+            animation: bgRotate 30s linear infinite;
+        }
+
+        @keyframes bgRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Navbar */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            background: rgba(10, 10, 15, 0.7);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+
+        /* Main Content */
+        .main {
+            padding: 140px 20px 80px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .premium-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .premium-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.05));
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 100px;
+            font-size: 0.9rem;
+            color: var(--gold);
+            margin-bottom: 24px;
+        }
+
+        .premium-header h1 {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .premium-header p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 60px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 215, 0, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* Pricing Card */
+        .pricing-section {
+            text-align: center;
+        }
+
+        .pricing-card {
+            background: linear-gradient(180deg, rgba(255, 215, 0, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 24px;
+            padding: 48px;
+            max-width: 400px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--gold), var(--purple));
+        }
+
+        .pricing-label {
+            font-size: 0.9rem;
+            color: var(--gold);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .pricing-amount {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .pricing-amount span {
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .pricing-period {
+            color: var(--text-muted);
+            margin-bottom: 32px;
+        }
+
+        .pricing-features {
+            text-align: left;
+            margin-bottom: 32px;
+        }
+
+        .pricing-feature {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .pricing-feature:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-feature .check {
+            color: var(--gold);
+            font-size: 1.2rem;
+        }
+
+        .pricing-btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pricing-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+        }
+
+        .pricing-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .coming-soon {
+            margin-top: 16px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Already premium */
+        .already-premium {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .already-premium .icon {
+            font-size: 4rem;
+            margin-bottom: 24px;
+        }
+
+        .already-premium h2 {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--gold), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .already-premium p {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+        }
+
+        footer a {
+            color: var(--gold);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav {
+                padding: 15px 20px;
+            }
+
+            .main {
+                padding: 120px 20px 60px;
+            }
+
+            .pricing-card {
+                padding: 32px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <nav>
+        <a href="/" class="logo-container">
+            <img src="/src/logo.png" alt="hehe.cx" class="logo-img">
+            <span class="logo-text">hehe.cx</span>
+        </a>
+        <div class="nav-buttons" id="navButtons">
+            <a href="/dashboard" class="btn btn-ghost">Dashboard</a>
+        </div>
+    </nav>
+
+    <main class="main">
+        <div id="upgradeContent">
+            <div class="premium-header">
+                <div class="premium-badge">⭐ Premium</div>
+                <h1>Upgrade Your Page</h1>
+                <p>Get access to exclusive features and make your hehe.cx page truly stand out.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📁</div>
+                    <h3>50MB Uploads</h3>
+                    <p>Upload larger, higher quality images for your profile and background.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎬</div>
+                    <h3>GIF Backgrounds</h3>
+                    <p>Make your page come alive with animated GIF backgrounds.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🖼️</div>
+                    <h3>GIF Avatars</h3>
+                    <p>Stand out with an animated profile picture that catches attention.</p>
+                </div>
+            </div>
+
+            <div class="pricing-section">
+                <div class="pricing-card">
+                    <div class="pricing-label">PREMIUM</div>
+                    <div class="pricing-amount">$5<span>/mo</span></div>
+                    <div class="pricing-period">or $50/year (save $10)</div>
+                    
+                    <div class="pricing-features">
+                        <div class="pricing-feature">
+                            <span class="check">✓</span>
+                            <span>50MB upload limit (5x more)</span>
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="check">✓</span>
+                            <span>Animated GIF backgrounds</span>
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="check">✓</span>
+                            <span>Animated GIF profile pictures</span>
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="check">✓</span>
+                            <span>Priority support</span>
+                        </div>
+                        <div class="pricing-feature">
+                            <span class="check">✓</span>
+                            <span>Early access to new features</span>
+                        </div>
+                    </div>
+                    
+                    <button class="pricing-btn" disabled>Coming Soon</button>
+                    <p class="coming-soon">Payment integration coming soon. Stay tuned!</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="already-premium" id="alreadyPremium">
+            <div class="icon">👑</div>
+            <h2>You're Already Premium!</h2>
+            <p>Thank you for supporting hehe.cx. You have access to all premium features.</p>
+            <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 hehe.cx - All Rights Reserved | <a href="mailto:support@example.com">Contact</a></p>
+    </footer>
+
+    <script>
+        // Check if user is logged in and if they're premium
+        fetch('/api/auth/status')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.authenticated) {
+                    // Not logged in, redirect to home
+                    window.location.href = '/?signup=true';
+                } else if (data.user.is_premium) {
+                    // Already premium, show different content
+                    document.getElementById('upgradeContent').style.display = 'none';
+                    document.getElementById('alreadyPremium').style.display = 'block';
+                }
+            });
+    </script>
+</body>
+</html>
+

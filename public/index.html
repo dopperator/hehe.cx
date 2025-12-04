@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>hehe.cx - Your Digital Identity</title>
+    <link rel="icon" type="image/png" href="/src/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #ffd700;
+            --gold-dark: #b8860b;
+            --purple: #8b5cf6;
+            --purple-dark: #6d28d9;
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --text: #f5f5f7;
+            --text-muted: #a1a1aa;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-gradient::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+            animation: bgRotate 30s linear infinite;
+        }
+
+        @keyframes bgRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Grid pattern overlay */
+        .grid-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* Navbar */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            background: rgba(10, 10, 15, 0.7);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .btn-purple:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-red {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .btn-red:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+        }
+
+        a.btn {
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 120px 20px 60px;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            color: var(--purple);
+            margin-bottom: 30px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .hero-badge::before {
+            content: '✨';
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 10vw, 5.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            animation: fadeInUp 0.8s ease-out 0.1s both;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+
+        .hero-cta .btn {
+            padding: 16px 32px;
+            font-size: 1.05rem;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Features */
+        .features {
+            padding: 100px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-icon.gold {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.05));
+        }
+
+        .feature-icon.purple {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.05));
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(180deg, #18181b 0%, #0f0f12 100%);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 440px;
+            width: 100%;
+            position: relative;
+            animation: modalIn 0.3s ease-out;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .modal p {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--purple);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 6px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .form-error {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .form-error.show {
+            display: block;
+        }
+
+        .modal .btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+
+        .modal-footer {
+            text-align: center;
+            margin-top: 24px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .modal-footer a {
+            color: var(--purple);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .modal-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+        }
+
+        footer a {
+            color: var(--gold);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav {
+                padding: 15px 20px;
+            }
+
+            .logo-text {
+                font-size: 1.25rem;
+            }
+
+            .nav-buttons .btn {
+                padding: 8px 16px;
+                font-size: 0.9rem;
+            }
+
+            .hero {
+                padding: 100px 20px 40px;
+            }
+
+            .hero-cta {
+                flex-direction: column;
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .hero-cta .btn {
+                width: 100%;
+            }
+
+            .modal {
+                padding: 30px 24px;
+            }
+        }
+
+        /* Loading state */
+        .btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn.loading::after {
+            content: '';
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-left: 8px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="grid-pattern"></div>
+
+    <nav>
+        <div class="logo-container">
+            <img src="/src/logo.png" alt="hehe.cx" class="logo-img">
+            <span class="logo-text">hehe.cx</span>
+        </div>
+        <div class="nav-buttons" id="navButtons">
+            <button class="btn btn-ghost" onclick="openModal('login')">Log In</button>
+            <button class="btn btn-primary" onclick="openModal('signup')">Sign Up</button>
+        </div>
+        <div class="nav-buttons" id="navButtonsLoggedIn" style="display: none;">
+            <a href="/help" class="btn btn-ghost">Help</a>
+            <a href="/premium" class="btn btn-purple">Premium</a>
+            <button class="btn btn-red" onclick="logout()">Log Out</button>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-badge">Beta!</div>
+        <h1>Your Links.<br><span>One Destination.</span></h1>
+        <p>Create your personalized digital identity. Share all your socials, content, and more with a funny link.</p>
+        <div class="hero-cta" id="heroCta">
+            <button class="btn btn-primary" onclick="openModal('signup')">Claim Your Link</button>
+            <button class="btn btn-ghost" onclick="openModal('login')">I have an account</button>
+        </div>
+        <div class="hero-cta" id="heroCtaLoggedIn" style="display: none;">
+            <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon gold">🔗</div>
+                <h3>All Your Links</h3>
+                <p>Connect Instagram, X, YouTube, Spotify, SoundCloud, Pinterest, and more in one beautiful page.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon purple">🎨</div>
+                <h3>Fully Customizable</h3>
+                <p>Upload your own profile picture and background. Choose gradients, colors, and make it uniquely yours.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon gold">⚡</div>
+                <h3>Simple & Fast</h3>
+                <p>Share your hehe.cx link anywhere. One link to rule them all - clean, memorable, professional.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon purple">👤</div>
+                <h3>Unique User ID</h3>
+                <p>Show off your early adopter status with your sequential user ID badge. #1, #100, or #10000 - own it!</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon gold">💎</div>
+                <h3>Premium Features</h3>
+                <p>Unlock animated GIF avatars and backgrounds, larger file sizes, and exclusive customization options.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon purple">📱</div>
+                <h3>Mobile Perfect</h3>
+                <p>Looks stunning on every device. Share via QR code, text, or anywhere you connect with people.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 hehe.cx - All Rights Reserved | <a href="mailto:support@example.com">Contact</a></p>
+    </footer>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('login')">&times;</button>
+            <h2>Welcome back</h2>
+            <p>Log in to manage your hehe.cx page</p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <div class="form-error" id="loginError"></div>
+                <button type="submit" class="btn btn-purple">Log In</button>
+            </form>
+            <div class="modal-footer">
+                Don't have an account? <a href="#" onclick="switchModal('signup')">Sign up</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div class="modal-overlay" id="signupModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('signup')">&times;</button>
+            <h2>Create your page</h2>
+            <p>Claim your unique hehe.cx link</p>
+            <form id="signupForm">
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupUsername">Username</label>
+                    <input type="text" id="signupUsername" placeholder="yourname" pattern="[a-zA-Z0-9_]+" minlength="3" maxlength="30" required>
+                    <small>hehe.cx/<strong id="usernamePreview">yourname</strong></small>
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" placeholder="••••••••" minlength="6" required>
+                    <small>At least 6 characters</small>
+                </div>
+                <div class="form-error" id="signupError"></div>
+                <button type="submit" class="btn btn-primary">Create Account</button>
+            </form>
+            <div class="modal-footer">
+                Already have an account? <a href="#" onclick="switchModal('login')">Log in</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if already logged in
+        fetch('/api/auth/status')
+            .then(res => res.json())
+            .then(data => {
+                if (data.authenticated) {
+                    // Show logged-in UI instead of redirecting
+                    document.getElementById('navButtons').style.display = 'none';
+                    document.getElementById('navButtonsLoggedIn').style.display = 'flex';
+                    document.getElementById('heroCta').style.display = 'none';
+                    document.getElementById('heroCtaLoggedIn').style.display = 'flex';
+                }
+            });
+
+        // Logout function
+        async function logout() {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.reload();
+        }
+
+        // Modal functions
+        function openModal(type) {
+            document.getElementById(type + 'Modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(type) {
+            document.getElementById(type + 'Modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function switchModal(to) {
+            const from = to === 'login' ? 'signup' : 'login';
+            closeModal(from);
+            setTimeout(() => openModal(to), 100);
+        }
+
+        // Close modal only on mousedown on overlay (not drag release)
+        // This prevents closing when selecting text and dragging outside the modal
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('mousedown', (e) => {
+                // Only close if the mousedown started directly on the overlay
+                if (e.target === overlay) {
+                    overlay.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+        });
+
+        // Username preview
+        document.getElementById('signupUsername').addEventListener('input', (e) => {
+            const preview = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') || 'yourname';
+            document.getElementById('usernamePreview').textContent = preview;
+        });
+
+        // Login form
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const error = document.getElementById('loginError');
+            
+            btn.classList.add('loading');
+            error.classList.remove('show');
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('loginEmail').value,
+                        password: document.getElementById('loginPassword').value
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    error.textContent = data.error || 'Login failed';
+                    error.classList.add('show');
+                }
+            } catch (err) {
+                error.textContent = 'Something went wrong. Please try again.';
+                error.classList.add('show');
+            }
+
+            btn.classList.remove('loading');
+        });
+
+        // Signup form
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const error = document.getElementById('signupError');
+            
+            btn.classList.add('loading');
+            error.classList.remove('show');
+
+            try {
+                const res = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('signupEmail').value,
+                        username: document.getElementById('signupUsername').value,
+                        password: document.getElementById('signupPassword').value
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    error.textContent = data.error || 'Signup failed';
+                    error.classList.add('show');
+                }
+            } catch (err) {
+                error.textContent = 'Something went wrong. Please try again.';
+                error.classList.add('show');
+            }
+
+            btn.classList.remove('loading');
+        });
+
+        // Escape key closes modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(m => {
+                    m.classList.remove('active');
+                });
+                document.body.style.overflow = '';
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help - hehe.cx</title>
+    <link rel="icon" type="image/png" href="/src/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #ffd700;
+            --gold-dark: #b8860b;
+            --purple: #8b5cf6;
+            --purple-dark: #6d28d9;
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --text: #f5f5f7;
+            --text-muted: #a1a1aa;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Navbar */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            background: rgba(10, 10, 15, 0.7);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+
+        /* Main Content */
+        .main {
+            padding: 120px 20px 80px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .help-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .help-header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .help-header p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            margin-bottom: 40px;
+        }
+
+        .faq-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .faq-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            padding: 20px 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .faq-question:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .faq-question .icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s;
+        }
+
+        .faq-item.open .faq-question .icon {
+            transform: rotate(45deg);
+        }
+
+        .faq-answer {
+            padding: 0 24px;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            color: var(--text-muted);
+        }
+
+        .faq-item.open .faq-answer {
+            padding: 0 24px 20px;
+            max-height: 500px;
+        }
+
+        /* Contact Section */
+        .contact-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .contact-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+
+        .contact-section p {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .contact-email {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .contact-email:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+        }
+
+        footer a {
+            color: var(--gold);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav {
+                padding: 15px 20px;
+            }
+
+            .main {
+                padding: 100px 20px 60px;
+            }
+
+            .help-header h1 {
+                font-size: 2rem;
+            }
+
+            .contact-section {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo-container">
+            <img src="/src/logo.png" alt="hehe.cx" class="logo-img">
+            <span class="logo-text">hehe.cx</span>
+        </a>
+        <div class="nav-buttons">
+            <a href="/dashboard" class="btn btn-ghost">Dashboard</a>
+        </div>
+    </nav>
+
+    <main class="main">
+        <div class="help-header">
+            <h1>Help Center</h1>
+            <p>Find answers to common questions about hehe.cx</p>
+        </div>
+
+        <div class="faq-section">
+            <h2>Getting Started</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>What is hehe.cx?</span>
+                    <span class="icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    hehe.cx is a link-in-bio platform that lets you create a beautiful, customizable page to share all your social media links in one place. Think of it as your digital business card that you can share anywhere.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>How do I create my page?</span>
+                    <span class="icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    Simply sign up with your email, choose a unique username, and you're ready to go! Your page will be available at hehe.cx/yourusername. You can then customize it from your dashboard.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Is hehe.cx free?</span>
+                    <span class="icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    Yes! hehe.cx is free to use with generous limits. Free users can upload images up to 10MB and add unlimited links. Premium users get additional features like 50MB uploads and animated GIF support.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-section">
+            <h2>Customization</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>What can I customize?</span>
+                    <span class="icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    You can customize your display name, bio, profile picture, and background. For backgrounds, you can choose a gradient with custom colors or upload your own image. Premium users can also use animated GIFs.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>What platforms can I link?</span>
+                    <span class="icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    We support 19 platforms including Instagram, X, YouTube, TikTok, Spotify, Discord, GitHub, LinkedIn, and many more. Each link displays with the platform's official logo.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>What is the User ID badge?</span>
+                    <span class="icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    Your User ID shows when you joined hehe.cx. The first person to sign up is #1, the second is #2, and so on. You can toggle this badge on or off in your profile settings.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-section">
+            <h2>Premium</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>What do I get with Premium?</span>
+                    <span class="icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    Premium members get: 50MB upload limit (vs 10MB), animated GIF profile pictures, animated GIF backgrounds, priority support, and early access to new features.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>How much does Premium cost?</span>
+                    <span class="icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    Premium is $5/month or $50/year (save $10). Payment integration is coming soon - stay tuned!
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-section">
+            <h2>Account</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Can I change my username?</span>
+                    <span class="icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    Currently, usernames cannot be changed after registration. Please choose carefully when signing up! This feature may be added in the future.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>How do I delete my account?</span>
+                    <span class="icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    To delete your account, please contact us at support@example.com. We'll process your request and remove all your data.
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-section">
+            <h2>Still need help?</h2>
+            <p>Can't find what you're looking for? We're here to help!</p>
+            <a href="mailto:support@example.com" class="contact-email">
+                <span>📧</span>
+                support@example.com
+            </a>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 hehe.cx - All Rights Reserved | <a href="/">Home</a> | <a href="/premium">Premium</a></p>
+    </footer>
+
+    <script>
+        // FAQ accordion
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', () => {
+                const item = question.parentElement;
+                item.classList.toggle('open');
+            });
+        });
+    </script>
+</body>
+</html>
+
