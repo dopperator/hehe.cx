@@ -598,6 +598,14 @@ app.get('/help', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'help.html'));
 });
 
+app.get('/terms', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'terms.html'));
+});
+
+app.get('/privacy', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
+});
+
 app.get('/:username', async (req, res) => {
     if (req.params.username.startsWith('api') || req.params.username.includes('.')) {
         return res.status(404).send('Not found');

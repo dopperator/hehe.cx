@@ -438,6 +438,66 @@
             display: block;
         }
 
+        .checkbox-group {
+            margin-top: 8px;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkbox-row .checkmark {
+            width: 16px;
+            height: 16px;
+            min-width: 16px;
+            min-height: 16px;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .checkbox-row .checkmark:hover {
+            border-color: var(--purple);
+        }
+
+        .checkbox-row input[type="checkbox"]:checked + .checkmark {
+            background: var(--purple);
+            border-color: var(--purple);
+        }
+
+        .checkbox-row input[type="checkbox"]:checked + .checkmark::after {
+            content: '✓';
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .checkbox-text {
+            user-select: none;
+        }
+
+        .checkbox-text a {
+            color: var(--purple);
+            text-decoration: none;
+        }
+
+        .checkbox-text a:hover {
+            text-decoration: underline;
+        }
+
         .modal .btn {
             width: 100%;
             padding: 16px;
@@ -649,6 +709,13 @@
                     <input type="password" id="signupPassword" placeholder="••••••••" minlength="6" required>
                     <small>At least 6 characters</small>
                 </div>
+                <div class="form-group checkbox-group">
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="agreeTerms" required>
+                        <span class="checkmark" onclick="document.getElementById('agreeTerms').click()"></span>
+                        <span class="checkbox-text">I agree to the <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy" target="_blank">Privacy Policy</a></span>
+                    </div>
+                </div>
                 <div class="form-error" id="signupError"></div>
                 <button type="submit" class="btn btn-primary">Create Account</button>
             </form>
@@ -753,6 +820,13 @@
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
             const error = document.getElementById('signupError');
+            
+            // Check if terms are agreed
+            if (!document.getElementById('agreeTerms').checked) {
+                error.textContent = 'You must agree to the Terms of Service and Privacy Policy';
+                error.classList.add('show');
+                return;
+            }
             
             btn.classList.add('loading');
             error.classList.remove('show');
