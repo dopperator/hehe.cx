@@ -1241,7 +1241,7 @@
                                 Thank you for supporting hehe.cx! You have access to all premium features.
                             </p>
                             
-                            <div style="text-align: left; background: var(--bg-input); border-radius: 12px; padding: 20px;">
+                            <div style="text-align: left; background: var(--bg-input); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
                                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
                                     <span style="color: var(--success);">✓</span>
                                     <span>50MB upload limit</span>
@@ -1253,6 +1253,20 @@
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     <span style="color: var(--success);">✓</span>
                                     <span>GIF profile pictures</span>
+                                </div>
+                            </div>
+                            
+                            <div style="text-align: left; background: var(--bg-input); border-radius: 12px; padding: 20px;">
+                                <h4 style="margin-bottom: 16px; font-size: 1rem;">Premium Settings</h4>
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <div>
+                                        <div style="font-weight: 500;">Hide "Create your own" footer</div>
+                                        <div style="font-size: 0.85rem; color: var(--text-muted);">Remove the hehe.cx branding from your profile page</div>
+                                    </div>
+                                    <label class="toggle">
+                                        <input type="checkbox" id="hideBranding" onchange="toggleBranding()">
+                                        <span class="toggle-slider"></span>
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -1322,6 +1336,17 @@
             return '🔗';
         }
 
+        // Helper to get image URL (handles both local paths and full URLs)
+        function getImageUrl(path) {
+            if (!path) return null;
+            // If it's already a full URL (Supabase), return as-is
+            if (path.startsWith('http://') || path.startsWith('https://')) {
+                return path;
+            }
+            // Local path - add leading slash if needed
+            return path.startsWith('/') ? path : '/' + path;
+        }
+
         // Check auth and load data
         async function init() {
             try {
@@ -1363,7 +1388,7 @@
             }
             
             if (currentUser.avatar) {
-                document.getElementById('sidebarAvatar').innerHTML = `<img src="/${currentUser.avatar}" alt="">`;
+                document.getElementById('sidebarAvatar').innerHTML = `<img src="${getImageUrl(currentUser.avatar)}" alt="">`;
             }
 
             // Form fields
@@ -1376,7 +1401,7 @@
             // Avatar
             document.getElementById('avatarInitial').textContent = initial;
             if (currentUser.avatar) {
-                document.getElementById('avatarPreview').innerHTML = `<img src="/${currentUser.avatar}" alt="">`;
+                document.getElementById('avatarPreview').innerHTML = `<img src="${getImageUrl(currentUser.avatar)}" alt="">`;
             }
 
             // Background
@@ -1397,6 +1422,7 @@
                 document.querySelectorAll('.premium-info').forEach(el => el.style.display = 'inline');
                 document.getElementById('premiumUpgrade').style.display = 'none';
                 document.getElementById('premiumActive').style.display = 'block';
+                document.getElementById('hideBranding').checked = currentUser.hide_branding;
                 document.getElementById('premiumNavItem').innerHTML = `
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
@@ -1426,7 +1452,7 @@
             // Avatar
             const initial = name[0].toUpperCase();
             if (currentUser.avatar) {
-                document.getElementById('previewAvatar').innerHTML = `<img src="/${currentUser.avatar}" alt="">`;
+                document.getElementById('previewAvatar').innerHTML = `<img src="${getImageUrl(currentUser.avatar)}" alt="">`;
             } else {
                 document.getElementById('previewAvatarInitial').textContent = initial;
             }
@@ -1441,7 +1467,7 @@
                 previewBg.classList.remove('image');
             } else if (currentUser.background) {
                 previewBg.style.background = 'none';
-                previewBg.style.backgroundImage = `url(/${currentUser.background})`;
+                previewBg.style.backgroundImage = `url(${getImageUrl(currentUser.background)})`;
                 previewBg.style.backgroundSize = 'cover';
                 previewBg.style.backgroundPosition = 'center';
                 previewBg.classList.add('image');
@@ -1567,8 +1593,8 @@
 
                 if (data.success) {
                     currentUser.avatar = data.avatar;
-                    document.getElementById('avatarPreview').innerHTML = `<img src="/${data.avatar}" alt="">`;
-                    document.getElementById('sidebarAvatar').innerHTML = `<img src="/${data.avatar}" alt="">`;
+                    document.getElementById('avatarPreview').innerHTML = `<img src="${getImageUrl(data.avatar)}" alt="">`;
+                    document.getElementById('sidebarAvatar').innerHTML = `<img src="${getImageUrl(data.avatar)}" alt="">`;
                     updatePreview();
                     showToast('Avatar uploaded!', 'success');
                 } else {
@@ -1718,6 +1744,33 @@
                 }
             } catch (error) {
                 showToast('Failed to save', 'error');
+            }
+        }
+
+        async function toggleBranding() {
+            const hideBranding = document.getElementById('hideBranding').checked;
+            
+            try {
+                const res = await fetch('/api/profile/branding', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hide_branding: hideBranding })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    currentUser.hide_branding = hideBranding;
+                    showToast(hideBranding ? 'Footer branding hidden' : 'Footer branding visible', 'success');
+                } else {
+                    // Revert checkbox on error
+                    document.getElementById('hideBranding').checked = !hideBranding;
+                    showToast(data.error || 'Failed to update', 'error');
+                }
+            } catch (error) {
+                // Revert checkbox on error
+                document.getElementById('hideBranding').checked = !hideBranding;
+                showToast('Failed to update', 'error');
             }
         }
 

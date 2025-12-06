@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - hehe.cx</title>
+    <link rel="icon" type="image/png" href="/src/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --red: #ef4444;
+            --red-dark: #dc2626;
+            --green: #22c55e;
+            --yellow: #eab308;
+            --purple: #8b5cf6;
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --text: #f5f5f7;
+            --text-muted: #a1a1aa;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: linear-gradient(180deg, #18181b 0%, #0f0f12 100%);
+            border: 2px solid var(--red);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 440px;
+            width: 100%;
+        }
+
+        .login-card h1 {
+            color: var(--red);
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .login-card p {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+
+        /* Admin Panel */
+        .admin-panel {
+            display: none;
+        }
+
+        .admin-panel.active {
+            display: block;
+        }
+
+        /* Header */
+        .admin-header {
+            background: rgba(239, 68, 68, 0.1);
+            border-bottom: 1px solid var(--red);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+        }
+
+        .admin-header h1 {
+            color: var(--red);
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-user {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .admin-user span {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Layout */
+        .admin-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px;
+            padding-left: 40px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--red);
+        }
+
+        .search-box::before {
+            content: '🔍';
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.9rem;
+        }
+
+        .user-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .user-item {
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .user-item:hover {
+            border-color: var(--red);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .user-item.selected {
+            border-color: var(--red);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .user-item.deactivated {
+            opacity: 0.6;
+            border-color: var(--yellow);
+        }
+
+        .user-item .user-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-item .user-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .badge-pill {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .badge-premium {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--purple);
+        }
+
+        .badge-admin {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--red);
+        }
+
+        .badge-deactivated {
+            background: rgba(234, 179, 8, 0.2);
+            color: var(--yellow);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .no-user {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+        }
+
+        .no-user span {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        /* User Details */
+        .user-details {
+            display: none;
+        }
+
+        .user-details.active {
+            display: block;
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            object-fit: cover;
+        }
+
+        .detail-info h2 {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .detail-info .username {
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Sections */
+        .section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section h3 {
+            font-size: 1rem;
+            margin-bottom: 16px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .info-item {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px 16px;
+            border-radius: 10px;
+        }
+
+        .info-item label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .info-item .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--purple);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-red {
+            background: var(--red);
+            color: white;
+        }
+
+        .btn-red:hover {
+            background: var(--red-dark);
+        }
+
+        .btn-green {
+            background: var(--green);
+            color: white;
+        }
+
+        .btn-purple {
+            background: var(--purple);
+            color: white;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--text-muted);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* Links List */
+        .links-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .link-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+        }
+
+        .link-item .platform {
+            min-width: 100px;
+            font-weight: 500;
+        }
+
+        .link-item .url {
+            flex: 1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Badges Section */
+        .badges-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .badge-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .badge-item img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .badge-item .badge-name {
+            font-size: 0.9rem;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(180deg, #18181b 0%, #0f0f12 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal h3 {
+            margin-bottom: 16px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        /* Code Input */
+        .code-input-container {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 24px 0;
+        }
+
+        .code-input {
+            width: 48px;
+            height: 56px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+        }
+
+        .code-input:focus {
+            outline: none;
+            border-color: var(--red);
+        }
+
+        .form-error {
+            color: var(--red);
+            font-size: 0.85rem;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .form-error.show {
+            display: block;
+        }
+
+        /* Badge Management */
+        .badge-management {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .badge-management h4 {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .available-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .available-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--purple);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .available-badge:hover {
+            background: rgba(139, 92, 246, 0.2);
+        }
+
+        .available-badge img {
+            width: 18px;
+            height: 18px;
+        }
+
+        .available-badge span {
+            font-size: 0.8rem;
+        }
+
+        /* Deactivation Warning */
+        .deactivation-warning {
+            background: rgba(234, 179, 8, 0.1);
+            border: 1px solid var(--yellow);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .deactivation-warning h4 {
+            color: var(--yellow);
+            margin-bottom: 8px;
+        }
+
+        .deactivation-warning p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Danger Zone */
+        .danger-zone {
+            border-color: var(--red);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .danger-zone h3 {
+            color: var(--red);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .admin-content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                max-height: 300px;
+            }
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text);
+        }
+
+        .tab.active {
+            background: var(--red);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-card">
+            <h1>🔐 Admin Panel</h1>
+            <p>Authorized personnel only</p>
+            
+            <div id="loginStep">
+                <form id="adminLoginForm">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="adminEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="adminPassword" required>
+                    </div>
+                    <div class="form-error" id="loginError"></div>
+                    <button type="submit" class="btn btn-red" style="width: 100%; margin-top: 10px;">Sign In</button>
+                </form>
+            </div>
+
+            <div id="verifyStep" style="display: none;">
+                <p style="text-align: center; margin-bottom: 16px;">Enter the verification code sent to your email</p>
+                <div class="code-input-container">
+                    <input type="text" class="code-input" maxlength="1" data-index="0">
+                    <input type="text" class="code-input" maxlength="1" data-index="1">
+                    <input type="text" class="code-input" maxlength="1" data-index="2">
+                    <input type="text" class="code-input" maxlength="1" data-index="3">
+                    <input type="text" class="code-input" maxlength="1" data-index="4">
+                    <input type="text" class="code-input" maxlength="1" data-index="5">
+                </div>
+                <div class="form-error" id="verifyError"></div>
+                <button class="btn btn-red" style="width: 100%;" onclick="verifyAdmin()">Verify</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-panel" id="adminPanel">
+        <header class="admin-header">
+            <h1>🔐 hehe.cx Admin</h1>
+            <div class="admin-user">
+                <span id="adminUsername"></span>
+                <button class="btn btn-ghost btn-sm" onclick="adminLogout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="admin-content">
+            <aside class="sidebar">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('users')">Users</div>
+                    <div class="tab" onclick="switchTab('badges')">Badges</div>
+                </div>
+
+                <!-- Users Tab -->
+                <div class="tab-content active" id="usersTab">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search username, email, or ID...">
+                    </div>
+                    <div class="user-list" id="userList">
+                        <p style="color: var(--text-muted); text-align: center; padding: 20px;">
+                            Search for a user
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Badges Tab -->
+                <div class="tab-content" id="badgesTab">
+                    <button class="btn btn-purple btn-sm" style="width: 100%; margin-bottom: 16px;" onclick="showCreateBadgeModal()">+ Create Badge</button>
+                    <div id="badgesList"></div>
+                </div>
+            </aside>
+
+            <main class="main-content">
+                <div class="no-user" id="noUser">
+                    <span>👤</span>
+                    <p>Select a user to view details</p>
+                </div>
+
+                <div class="user-details" id="userDetails">
+                    <!-- Populated by JS -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal">
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage"></p>
+            <div class="form-group" id="confirmInputGroup" style="display: none;">
+                <label id="confirmInputLabel"></label>
+                <input type="text" id="confirmInput">
+            </div>
+            <div class="form-group" id="confirmReasonGroup" style="display: none;">
+                <label>Reason</label>
+                <textarea id="confirmReason" placeholder="Enter reason..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeConfirmModal()">Cancel</button>
+                <button class="btn btn-red" id="confirmBtn" onclick="executeConfirm()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="createBadgeModal">
+        <div class="modal">
+            <h3>Create Badge</h3>
+            <div class="form-group">
+                <label>Badge Name</label>
+                <input type="text" id="badgeName" placeholder="e.g., Early Adopter">
+            </div>
+            <div class="form-group">
+                <label>Image URL</label>
+                <input type="text" id="badgeImageUrl" placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label>Description (optional)</label>
+                <textarea id="badgeDescription" placeholder="What does this badge represent?"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeCreateBadgeModal()">Cancel</button>
+                <button class="btn btn-purple" onclick="createBadge()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editLinkModal">
+        <div class="modal">
+            <h3>Edit Link</h3>
+            <div class="form-group">
+                <label>Platform</label>
+                <input type="text" id="editLinkPlatform">
+            </div>
+            <div class="form-group">
+                <label>URL</label>
+                <input type="text" id="editLinkUrl">
+            </div>
+            <input type="hidden" id="editLinkId">
+            <input type="hidden" id="editLinkUserId">
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeEditLinkModal()">Cancel</button>
+                <button class="btn btn-red" onclick="deleteLinkFromModal()">Delete</button>
+                <button class="btn btn-purple" onclick="saveLink()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAdminId = null;
+        let currentUser = null;
+        let allBadges = [];
+        let confirmCallback = null;
+
+        // Check admin status on load
+        fetch('/api/admin/status')
+            .then(res => res.json())
+            .then(data => {
+                if (data.authenticated) {
+                    showAdminPanel(data.admin);
+                }
+            });
+
+        // Admin login form
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const error = document.getElementById('loginError');
+            
+            btn.classList.add('loading');
+            error.classList.remove('show');
+
+            try {
+                const res = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('adminEmail').value,
+                        password: document.getElementById('adminPassword').value
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    currentAdminId = data.adminId;
+                    document.getElementById('loginStep').style.display = 'none';
+                    document.getElementById('verifyStep').style.display = 'block';
+                    document.querySelector('#verifyStep .code-input').focus();
+                } else {
+                    error.textContent = data.error;
+                    error.classList.add('show');
+                }
+            } catch (err) {
+                error.textContent = 'Connection error';
+                error.classList.add('show');
+            }
+
+            btn.classList.remove('loading');
+        });
+
+        // Code input handling
+        document.querySelectorAll('#verifyStep .code-input').forEach((input, index, inputs) => {
+            input.addEventListener('input', (e) => {
+                const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                e.target.value = value;
+                if (value && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+                if (Array.from(inputs).every(i => i.value)) {
+                    verifyAdmin();
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasted = e.clipboardData.getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                pasted.split('').forEach((char, i) => {
+                    if (inputs[i]) inputs[i].value = char;
+                });
+                if (pasted.length === 6) verifyAdmin();
+            });
+        });
+
+        async function verifyAdmin() {
+            const inputs = document.querySelectorAll('#verifyStep .code-input');
+            const code = Array.from(inputs).map(i => i.value).join('');
+            const error = document.getElementById('verifyError');
+
+            if (code.length !== 6) return;
+
+            try {
+                const res = await fetch('/api/admin/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminId: currentAdminId, code })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    showAdminPanel(data.admin);
+                } else {
+                    error.textContent = data.error;
+                    error.classList.add('show');
+                    inputs.forEach(i => i.value = '');
+                    inputs[0].focus();
+                }
+            } catch (err) {
+                error.textContent = 'Connection error';
+                error.classList.add('show');
+            }
+        }
+
+        function showAdminPanel(admin) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminPanel').classList.add('active');
+            document.getElementById('adminUsername').textContent = admin.email;
+            loadBadges();
+        }
+
+        async function adminLogout() {
+            await fetch('/api/admin/logout', { method: 'POST' });
+            location.reload();
+        }
+
+        // Tab switching
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab:nth-child(${tab === 'users' ? 1 : 2})`).classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+            
+            if (tab === 'badges') loadBadges();
+        }
+
+        // User search
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => searchUsers(e.target.value), 300);
+        });
+
+        async function searchUsers(query) {
+            if (!query) {
+                document.getElementById('userList').innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">Search for a user</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/admin/users/search?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+
+                if (data.users.length === 0) {
+                    document.getElementById('userList').innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">No users found</p>';
+                    return;
+                }
+
+                document.getElementById('userList').innerHTML = data.users.map(user => `
+                    <div class="user-item ${user.is_deactivated ? 'deactivated' : ''}" onclick="loadUser(${user.id})">
+                        <div class="user-name">
+                            ${user.display_name || user.username}
+                            ${user.is_premium ? '<span class="badge-pill badge-premium">PRO</span>' : ''}
+                            ${user.is_admin ? '<span class="badge-pill badge-admin">ADMIN</span>' : ''}
+                            ${user.is_deactivated ? '<span class="badge-pill badge-deactivated">DEACTIVATED</span>' : ''}
+                        </div>
+                        <div class="user-meta">ID: ${user.id} · @${user.username}</div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Search error:', err);
+            }
+        }
+
+        async function loadUser(userId) {
+            try {
+                const res = await fetch(`/api/admin/users/${userId}`);
+                const data = await res.json();
+
+                currentUser = data;
+                document.getElementById('noUser').style.display = 'none';
+                document.getElementById('userDetails').classList.add('active');
+
+                renderUserDetails(data);
+
+                // Highlight selected user
+                document.querySelectorAll('.user-item').forEach(item => item.classList.remove('selected'));
+                event.currentTarget?.classList.add('selected');
+            } catch (err) {
+                console.error('Load user error:', err);
+            }
+        }
+
+        function renderUserDetails(data) {
+            const { user, links, badges } = data;
+            const userBadgeIds = badges.map(b => b.id);
+
+            document.getElementById('userDetails').innerHTML = `
+                ${user.is_deactivated ? `
+                    <div class="deactivation-warning">
+                        <h4>⚠️ Account Deactivated</h4>
+                        <p><strong>Reason:</strong> ${user.deactivation_reason || 'No reason provided'}</p>
+                    </div>
+                ` : ''}
+
+                <div class="detail-header">
+                    <img src="${user.avatar || '/src/logo.png'}" class="detail-avatar" onerror="this.src='/src/logo.png'">
+                    <div class="detail-info">
+                        <h2>${user.display_name || user.username}</h2>
+                        <div class="username">@${user.username}</div>
+                    </div>
+                    <a href="/${user.username}" target="_blank" class="btn btn-ghost btn-sm">View Profile →</a>
+                </div>
+
+                <div class="section">
+                    <h3>User Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>User ID</label>
+                            <div class="value">${user.id}</div>
+                        </div>
+                        <div class="info-item">
+                            <label>Username</label>
+                            <div class="value">@${user.username}</div>
+                        </div>
+                        <div class="info-item">
+                            <label>Email</label>
+                            <div class="value">${user.email}</div>
+                        </div>
+                        <div class="info-item">
+                            <label>Signup IP</label>
+                            <div class="value">${user.signup_ip || 'Unknown'}</div>
+                        </div>
+                        <div class="info-item">
+                            <label>Created</label>
+                            <div class="value">${new Date(user.created_at).toLocaleString()}</div>
+                        </div>
+                        <div class="info-item">
+                            <label>Status</label>
+                            <div class="value">
+                                ${user.is_premium ? '💎 Premium' : '👤 Free'}
+                                ${user.is_admin ? ' · 🔐 Admin' : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>Edit Profile</h3>
+                    <div class="form-group">
+                        <label>Display Name</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="editDisplayName" value="${user.display_name || ''}" style="flex: 1;">
+                            <button class="btn btn-purple btn-sm" onclick="saveDisplayName()">Save</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Bio</label>
+                        <textarea id="editBio">${user.bio || ''}</textarea>
+                        <button class="btn btn-purple btn-sm" style="margin-top: 8px;" onclick="saveBio()">Save Bio</button>
+                    </div>
+                    <div class="action-buttons" style="margin-top: 16px;">
+                        <button class="btn btn-ghost btn-sm" onclick="removeAvatar(${user.id})" ${!user.avatar ? 'disabled' : ''}>Remove Avatar</button>
+                        <button class="btn btn-ghost btn-sm" onclick="removeBackground(${user.id})" ${!user.background ? 'disabled' : ''}>Remove Background</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>Connections (${links.length})</h3>
+                    ${links.length > 0 ? `
+                        <div class="links-list">
+                            ${links.map(link => `
+                                <div class="link-item">
+                                    <span class="platform">${link.platform}</span>
+                                    <span class="url">${link.url}</span>
+                                    <button class="btn btn-ghost btn-sm" onclick="editLink(${user.id}, ${link.id}, '${link.platform}', '${link.url.replace(/'/g, "\\'")}')">Edit</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<p style="color: var(--text-muted);">No connections</p>'}
+                </div>
+
+                <div class="section">
+                    <h3>Badges</h3>
+                    ${badges.length > 0 ? `
+                        <div class="badges-grid">
+                            ${badges.map(badge => `
+                                <div class="badge-item">
+                                    <img src="${badge.image_url}" alt="${badge.name}" onerror="this.style.display='none'">
+                                    <span class="badge-name">${badge.name}</span>
+                                    <button class="btn btn-ghost btn-sm" onclick="removeBadge(${user.id}, ${badge.id})">×</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<p style="color: var(--text-muted); margin-bottom: 16px;">No badges</p>'}
+                    
+                    <div class="badge-management">
+                        <h4>Grant Badge</h4>
+                        <div class="available-badges">
+                            ${allBadges.filter(b => !userBadgeIds.includes(b.id)).map(badge => `
+                                <div class="available-badge" onclick="grantBadge(${user.id}, ${badge.id})">
+                                    <img src="${badge.image_url}" alt="${badge.name}" onerror="this.style.display='none'">
+                                    <span>${badge.name}</span>
+                                </div>
+                            `).join('') || '<p style="color: var(--text-muted);">No badges available to grant</p>'}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>Premium Status</h3>
+                    <div class="action-buttons">
+                        ${user.is_premium ? `
+                            <button class="btn btn-ghost" onclick="removePremium(${user.id})">Remove Premium</button>
+                        ` : `
+                            <button class="btn btn-purple" onclick="grantPremium(${user.id})">Grant Premium</button>
+                        `}
+                    </div>
+                </div>
+
+                <div class="section danger-zone">
+                    <h3>⚠️ Danger Zone</h3>
+                    <div class="action-buttons">
+                        ${user.is_deactivated ? `
+                            <button class="btn btn-green" onclick="reactivateAccount(${user.id})">Reactivate Account</button>
+                        ` : `
+                            <button class="btn btn-red" onclick="deactivateAccount(${user.id})">Deactivate Account</button>
+                        `}
+                        <button class="btn btn-red" onclick="deleteAccount(${user.id})">Delete Permanently</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Action functions
+        async function saveDisplayName() {
+            const displayName = document.getElementById('editDisplayName').value;
+            await fetch(`/api/admin/users/${currentUser.user.id}/display-name`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ display_name: displayName })
+            });
+            loadUser(currentUser.user.id);
+        }
+
+        async function saveBio() {
+            const bio = document.getElementById('editBio').value;
+            await fetch(`/api/admin/users/${currentUser.user.id}/bio`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bio })
+            });
+            loadUser(currentUser.user.id);
+        }
+
+        async function removeAvatar(userId) {
+            await fetch(`/api/admin/users/${userId}/avatar`, { method: 'DELETE' });
+            loadUser(userId);
+        }
+
+        async function removeBackground(userId) {
+            await fetch(`/api/admin/users/${userId}/background`, { method: 'DELETE' });
+            loadUser(userId);
+        }
+
+        async function grantPremium(userId) {
+            await fetch(`/api/admin/users/${userId}/premium`, { method: 'POST' });
+            loadUser(userId);
+        }
+
+        async function removePremium(userId) {
+            await fetch(`/api/admin/users/${userId}/premium`, { method: 'DELETE' });
+            loadUser(userId);
+        }
+
+        async function grantBadge(userId, badgeId) {
+            await fetch(`/api/admin/users/${userId}/badges/${badgeId}`, { method: 'POST' });
+            loadUser(userId);
+        }
+
+        async function removeBadge(userId, badgeId) {
+            await fetch(`/api/admin/users/${userId}/badges/${badgeId}`, { method: 'DELETE' });
+            loadUser(userId);
+        }
+
+        function deactivateAccount(userId) {
+            showConfirmModal(
+                'Deactivate Account',
+                'This will prevent the user from logging in. They will see the deactivation reason.',
+                { showReason: true },
+                async () => {
+                    const reason = document.getElementById('confirmReason').value;
+                    if (!reason.trim()) {
+                        alert('Please provide a reason');
+                        return false;
+                    }
+                    await fetch(`/api/admin/users/${userId}/deactivate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason })
+                    });
+                    loadUser(userId);
+                    searchUsers(document.getElementById('searchInput').value);
+                    return true;
+                }
+            );
+        }
+
+        function reactivateAccount(userId) {
+            showConfirmModal(
+                'Reactivate Account',
+                'This will allow the user to log in again. Type REACTIVATE to confirm.',
+                { showInput: true, inputLabel: 'Type REACTIVATE to confirm', expectedValue: 'REACTIVATE' },
+                async () => {
+                    await fetch(`/api/admin/users/${userId}/reactivate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ confirm: 'REACTIVATE' })
+                    });
+                    loadUser(userId);
+                    searchUsers(document.getElementById('searchInput').value);
+                    return true;
+                }
+            );
+        }
+
+        function deleteAccount(userId) {
+            showConfirmModal(
+                '⚠️ Delete Account Permanently',
+                'This action CANNOT be undone. All user data will be permanently deleted. Type DELETE to confirm.',
+                { showInput: true, inputLabel: 'Type DELETE to confirm', expectedValue: 'DELETE' },
+                async () => {
+                    await fetch(`/api/admin/users/${userId}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ confirm: 'DELETE' })
+                    });
+                    document.getElementById('userDetails').classList.remove('active');
+                    document.getElementById('noUser').style.display = 'flex';
+                    searchUsers(document.getElementById('searchInput').value);
+                    return true;
+                }
+            );
+        }
+
+        // Link editing
+        function editLink(userId, linkId, platform, url) {
+            document.getElementById('editLinkPlatform').value = platform;
+            document.getElementById('editLinkUrl').value = url;
+            document.getElementById('editLinkId').value = linkId;
+            document.getElementById('editLinkUserId').value = userId;
+            document.getElementById('editLinkModal').classList.add('active');
+        }
+
+        function closeEditLinkModal() {
+            document.getElementById('editLinkModal').classList.remove('active');
+        }
+
+        async function saveLink() {
+            const linkId = document.getElementById('editLinkId').value;
+            const userId = document.getElementById('editLinkUserId').value;
+            const platform = document.getElementById('editLinkPlatform').value;
+            const url = document.getElementById('editLinkUrl').value;
+
+            await fetch(`/api/admin/users/${userId}/links/${linkId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ platform, url })
+            });
+
+            closeEditLinkModal();
+            loadUser(userId);
+        }
+
+        async function deleteLinkFromModal() {
+            const linkId = document.getElementById('editLinkId').value;
+            const userId = document.getElementById('editLinkUserId').value;
+
+            await fetch(`/api/admin/users/${userId}/links/${linkId}`, { method: 'DELETE' });
+
+            closeEditLinkModal();
+            loadUser(userId);
+        }
+
+        // Confirm modal
+        function showConfirmModal(title, message, options, callback) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            
+            const inputGroup = document.getElementById('confirmInputGroup');
+            const reasonGroup = document.getElementById('confirmReasonGroup');
+            
+            inputGroup.style.display = options.showInput ? 'block' : 'none';
+            reasonGroup.style.display = options.showReason ? 'block' : 'none';
+            
+            if (options.showInput) {
+                document.getElementById('confirmInputLabel').textContent = options.inputLabel;
+                document.getElementById('confirmInput').value = '';
+            }
+            if (options.showReason) {
+                document.getElementById('confirmReason').value = '';
+            }
+
+            confirmCallback = async () => {
+                if (options.showInput) {
+                    const value = document.getElementById('confirmInput').value;
+                    if (value !== options.expectedValue) {
+                        alert(`Please type ${options.expectedValue} to confirm`);
+                        return;
+                    }
+                }
+                const success = await callback();
+                if (success !== false) {
+                    closeConfirmModal();
+                }
+            };
+
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('active');
+            confirmCallback = null;
+        }
+
+        function executeConfirm() {
+            if (confirmCallback) confirmCallback();
+        }
+
+        // Badges management
+        async function loadBadges() {
+            try {
+                const res = await fetch('/api/admin/badges');
+                const data = await res.json();
+                allBadges = data.badges;
+
+                document.getElementById('badgesList').innerHTML = data.badges.length > 0 ? 
+                    data.badges.map(badge => `
+                        <div class="badge-item" style="margin-bottom: 8px;">
+                            <img src="${badge.image_url}" alt="${badge.name}" onerror="this.style.display='none'">
+                            <div style="flex: 1;">
+                                <div class="badge-name">${badge.name}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">${badge.description || 'No description'}</div>
+                            </div>
+                            <button class="btn btn-ghost btn-sm" onclick="deleteBadge(${badge.id})">×</button>
+                        </div>
+                    `).join('') :
+                    '<p style="color: var(--text-muted); text-align: center;">No badges created yet</p>';
+            } catch (err) {
+                console.error('Load badges error:', err);
+            }
+        }
+
+        function showCreateBadgeModal() {
+            document.getElementById('badgeName').value = '';
+            document.getElementById('badgeImageUrl').value = '';
+            document.getElementById('badgeDescription').value = '';
+            document.getElementById('createBadgeModal').classList.add('active');
+        }
+
+        function closeCreateBadgeModal() {
+            document.getElementById('createBadgeModal').classList.remove('active');
+        }
+
+        async function createBadge() {
+            const name = document.getElementById('badgeName').value;
+            const image_url = document.getElementById('badgeImageUrl').value;
+            const description = document.getElementById('badgeDescription').value;
+
+            if (!name || !image_url) {
+                alert('Name and image URL are required');
+                return;
+            }
+
+            await fetch('/api/admin/badges', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, image_url, description })
+            });
+
+            closeCreateBadgeModal();
+            loadBadges();
+        }
+
+        async function deleteBadge(badgeId) {
+            if (!confirm('Delete this badge? It will be removed from all users.')) return;
+            await fetch(`/api/admin/badges/${badgeId}`, { method: 'DELETE' });
+            loadBadges();
+        }
+
+        // Close modals on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+            }
+        });
+    </script>
+</body>
+</html>
+

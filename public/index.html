@@ -590,6 +590,89 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Verification code input */
+        .code-input-container {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 24px 0;
+        }
+
+        .code-input {
+            width: 48px;
+            height: 56px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            transition: all 0.2s;
+        }
+
+        .code-input:focus {
+            outline: none;
+            border-color: var(--purple);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        }
+
+        .code-input.filled {
+            border-color: var(--purple);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .timer-container {
+            text-align: center;
+            margin: 16px 0;
+        }
+
+        .timer {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 100px;
+            font-size: 0.9rem;
+            color: var(--gold);
+        }
+
+        .timer.expired {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .resend-btn {
+            background: transparent;
+            border: none;
+            color: var(--purple);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .resend-btn:hover:not(:disabled) {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .resend-btn:disabled {
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .verification-email {
+            color: var(--purple);
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -621,7 +704,7 @@
             <button class="btn btn-ghost" onclick="openModal('login')">I have an account</button>
         </div>
         <div class="hero-cta" id="heroCtaLoggedIn" style="display: none;">
-            <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+            <a href="/dashboard" class="btn btn-primary">Open Dashboard</a>
         </div>
     </section>
 
@@ -644,8 +727,8 @@
             </div>
             <div class="feature-card">
                 <div class="feature-icon purple">👤</div>
-                <h3>Unique User ID</h3>
-                <p>Show off your early adopter status with your sequential user ID badge. #1, #100, or #10000 - own it!</p>
+                <h3>Unique User ID and Badges</h3>
+                <p>Show off your early adopter status with your sequential user ID badge. Also earn other limited-timebadges when events occur!</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon gold">💎</div>
@@ -722,6 +805,54 @@
             <div class="modal-footer">
                 Already have an account? <a href="#" onclick="switchModal('login')">Log in</a>
             </div>
+        </div>
+    </div>
+
+    <!-- Verification Modal -->
+    <div class="modal-overlay" id="verifyModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeVerifyModal()">&times;</button>
+            <h2>Verify your email</h2>
+            <p>Enter the 6-character code sent to <span class="verification-email" id="verifyEmail"></span></p>
+            
+            <div class="code-input-container">
+                <input type="text" class="code-input" maxlength="1" data-index="0" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" data-index="1" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" data-index="2" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" data-index="3" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" data-index="4" autocomplete="off">
+                <input type="text" class="code-input" maxlength="1" data-index="5" autocomplete="off">
+            </div>
+            
+            <div class="timer-container">
+                <div class="timer" id="verifyTimer">
+                    <span>⏱️</span>
+                    <span id="timerText">5:00</span>
+                </div>
+            </div>
+            
+            <div class="form-error" id="verifyError"></div>
+            
+            <button class="btn btn-purple" id="verifyBtn" onclick="verifyCode()">Verify & Create Account</button>
+            
+            <div class="modal-footer">
+                <button class="resend-btn" id="resendBtn" onclick="resendCode()">Resend Code</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Deactivated Modal -->
+    <div class="modal-overlay" id="deactivationModal">
+        <div class="modal" style="border: 2px solid #ef4444;">
+            <button class="modal-close" onclick="closeDeactivationModal()">&times;</button>
+            <h2 style="color: #ef4444;">⚠️ Account Deactivated</h2>
+            <p>Your account has been deactivated by an administrator.</p>
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px; margin: 20px 0;">
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;">Reason:</p>
+                <p id="deactivationReason" style="color: var(--text); margin: 0;"></p>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">If you believe this is a mistake, please contact support at <a href="mailto:support@example.com" style="color: var(--purple);">support@example.com</a></p>
+            <button class="btn btn-ghost" onclick="closeDeactivationModal()" style="width: 100%; margin-top: 16px;">Close</button>
         </div>
     </div>
 
@@ -803,6 +934,9 @@
 
                 if (data.success) {
                     window.location.href = '/dashboard';
+                } else if (data.deactivated) {
+                    // Show deactivation modal
+                    showDeactivationModal(data.reason);
                 } else {
                     error.textContent = data.error || 'Login failed';
                     error.classList.add('show');
@@ -814,6 +948,25 @@
 
             btn.classList.remove('loading');
         });
+
+        // Show deactivation modal
+        function showDeactivationModal(reason) {
+            closeModal('login');
+            document.getElementById('deactivationReason').textContent = reason;
+            document.getElementById('deactivationModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDeactivationModal() {
+            document.getElementById('deactivationModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Verification state
+        let verificationEmail = '';
+        let timerInterval = null;
+        let timeRemaining = 300; // 5 minutes in seconds
+        let canResend = true;
 
         // Signup form
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
@@ -845,7 +998,11 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    window.location.href = '/dashboard';
+                    // Show verification modal
+                    verificationEmail = data.email;
+                    canResend = true;
+                    closeModal('signup');
+                    openVerifyModal();
                 } else {
                     error.textContent = data.error || 'Signup failed';
                     error.classList.add('show');
@@ -858,6 +1015,217 @@
             btn.classList.remove('loading');
         });
 
+        // Open verification modal
+        function openVerifyModal() {
+            document.getElementById('verifyEmail').textContent = verificationEmail;
+            document.getElementById('verifyModal').classList.add('active');
+            document.getElementById('verifyError').classList.remove('show');
+            document.getElementById('resendBtn').disabled = !canResend;
+            document.getElementById('resendBtn').textContent = canResend ? 'Resend Code' : 'Code Already Resent';
+            document.body.style.overflow = 'hidden';
+            
+            // Clear code inputs
+            document.querySelectorAll('.code-input').forEach(input => {
+                input.value = '';
+                input.classList.remove('filled');
+            });
+            document.querySelector('.code-input').focus();
+            
+            // Start timer
+            startTimer();
+        }
+
+        // Close verification modal
+        function closeVerifyModal() {
+            document.getElementById('verifyModal').classList.remove('active');
+            document.body.style.overflow = '';
+            stopTimer();
+        }
+
+        // Timer functions
+        function startTimer() {
+            timeRemaining = 300; // Reset to 5 minutes
+            updateTimerDisplay();
+            
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                
+                if (timeRemaining <= 0) {
+                    stopTimer();
+                    document.getElementById('verifyTimer').classList.add('expired');
+                    document.getElementById('timerText').textContent = 'Expired';
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            document.getElementById('timerText').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('verifyTimer').classList.remove('expired');
+        }
+
+        // Code input handling
+        document.querySelectorAll('.code-input').forEach((input, index, inputs) => {
+            input.addEventListener('input', (e) => {
+                const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                e.target.value = value;
+                
+                if (value) {
+                    e.target.classList.add('filled');
+                    // Move to next input
+                    if (index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                } else {
+                    e.target.classList.remove('filled');
+                }
+                
+                // Auto-submit when all filled
+                const code = Array.from(inputs).map(i => i.value).join('');
+                if (code.length === 6) {
+                    verifyCode();
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                // Handle backspace
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+
+            // Handle paste
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                
+                pastedData.split('').forEach((char, i) => {
+                    if (inputs[i]) {
+                        inputs[i].value = char;
+                        inputs[i].classList.add('filled');
+                    }
+                });
+                
+                if (pastedData.length === 6) {
+                    verifyCode();
+                } else if (pastedData.length > 0) {
+                    inputs[Math.min(pastedData.length, 5)].focus();
+                }
+            });
+        });
+
+        // Verify code
+        async function verifyCode() {
+            const inputs = document.querySelectorAll('.code-input');
+            const code = Array.from(inputs).map(i => i.value).join('');
+            const error = document.getElementById('verifyError');
+            const btn = document.getElementById('verifyBtn');
+            
+            if (code.length !== 6) {
+                error.textContent = 'Please enter the complete 6-character code';
+                error.classList.add('show');
+                return;
+            }
+            
+            if (timeRemaining <= 0) {
+                error.textContent = 'Code has expired. Please resend or sign up again.';
+                error.classList.add('show');
+                return;
+            }
+            
+            btn.classList.add('loading');
+            error.classList.remove('show');
+            
+            try {
+                const res = await fetch('/api/auth/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: verificationEmail,
+                        code: code
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    error.textContent = data.error || 'Verification failed';
+                    error.classList.add('show');
+                    // Clear inputs on error
+                    inputs.forEach(input => {
+                        input.value = '';
+                        input.classList.remove('filled');
+                    });
+                    inputs[0].focus();
+                }
+            } catch (err) {
+                error.textContent = 'Something went wrong. Please try again.';
+                error.classList.add('show');
+            }
+            
+            btn.classList.remove('loading');
+        }
+
+        // Resend code
+        async function resendCode() {
+            if (!canResend) return;
+            
+            const btn = document.getElementById('resendBtn');
+            const error = document.getElementById('verifyError');
+            
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            error.classList.remove('show');
+            
+            try {
+                const res = await fetch('/api/auth/resend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: verificationEmail
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    canResend = false;
+                    btn.textContent = 'Code Already Resent';
+                    // Reset timer
+                    startTimer();
+                    // Clear inputs
+                    document.querySelectorAll('.code-input').forEach(input => {
+                        input.value = '';
+                        input.classList.remove('filled');
+                    });
+                    document.querySelector('.code-input').focus();
+                } else {
+                    error.textContent = data.error || 'Failed to resend code';
+                    error.classList.add('show');
+                    btn.disabled = false;
+                    btn.textContent = 'Resend Code';
+                }
+            } catch (err) {
+                error.textContent = 'Something went wrong. Please try again.';
+                error.classList.add('show');
+                btn.disabled = false;
+                btn.textContent = 'Resend Code';
+            }
+        }
+
         // Escape key closes modals
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -865,6 +1233,14 @@
                     m.classList.remove('active');
                 });
                 document.body.style.overflow = '';
+                stopTimer();
+            }
+        });
+
+        // Close verify modal on overlay click
+        document.getElementById('verifyModal').addEventListener('mousedown', (e) => {
+            if (e.target === document.getElementById('verifyModal')) {
+                closeVerifyModal();
             }
         });
     </script>

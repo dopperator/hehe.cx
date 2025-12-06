@@ -91,13 +91,74 @@
             object-fit: cover;
         }
 
+        .display-name-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            animation: fadeInUp 0.6s ease-out 0.1s both;
+            flex-wrap: wrap;
+        }
+
         .display-name {
             font-size: 2rem;
             font-weight: 700;
             color: white;
-            margin-bottom: 8px;
             text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
-            animation: fadeInUp 0.6s ease-out 0.1s both;
+        }
+
+        .user-badges {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .user-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 4px;
+            cursor: help;
+            transition: transform 0.2s;
+        }
+
+        .user-badge:hover {
+            transform: scale(1.15);
+        }
+
+        .user-badge img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .badge-tooltip {
+            position: relative;
+        }
+
+        .badge-tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 10px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: white;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            margin-bottom: 6px;
+        }
+
+        .badge-tooltip:hover::after {
+            opacity: 1;
         }
 
         .user-id {
@@ -388,7 +449,10 @@
         <div class="avatar" id="avatar">
             <span id="avatarInitial">?</span>
         </div>
-        <h1 class="display-name" id="displayName">Loading...</h1>
+        <div class="display-name-container">
+            <h1 class="display-name" id="displayName">Loading...</h1>
+            <div class="user-badges" id="userBadges"></div>
+        </div>
         <div class="user-id hidden" id="userId">#1</div>
         <p class="bio hidden" id="bio"></p>
         <div class="links" id="links"></div>
@@ -397,7 +461,7 @@
     <footer class="profile-footer hidden" id="footer">
         <a href="/">
             <img src="/src/logo.png" alt="hehe.cx">
-            Create your own hehe.cx
+            Create your own funny
         </a>
     </footer>
 
@@ -433,6 +497,15 @@
             return '🔗';
         }
 
+        // Helper to get image URL (handles both local paths and full URLs)
+        function getImageUrl(path) {
+            if (!path) return null;
+            if (path.startsWith('http://') || path.startsWith('https://')) {
+                return path;
+            }
+            return path.startsWith('/') ? path : '/' + path;
+        }
+
         async function loadProfile() {
             const username = window.location.pathname.slice(1);
             
@@ -453,7 +526,7 @@
                 // Background
                 const pageBg = document.getElementById('pageBg');
                 if (user.background_type === 'image' && user.background) {
-                    pageBg.style.backgroundImage = `url(/${user.background})`;
+                    pageBg.style.backgroundImage = `url(${getImageUrl(user.background)})`;
                     pageBg.classList.add('image');
                 } else {
                     pageBg.style.background = `linear-gradient(135deg, ${user.gradient_start || '#667eea'} 0%, ${user.gradient_end || '#764ba2'} 100%)`;
@@ -464,7 +537,7 @@
                 const initial = (user.display_name || user.username)[0].toUpperCase();
                 
                 if (user.avatar) {
-                    avatar.innerHTML = `<img src="/${user.avatar}" alt="${user.display_name || user.username}">`;
+                    avatar.innerHTML = `<img src="${getImageUrl(user.avatar)}" alt="${user.display_name || user.username}">`;
                 } else {
                     document.getElementById('avatarInitial').textContent = initial;
                 }
@@ -475,6 +548,23 @@
 
                 // Name
                 document.getElementById('displayName').textContent = user.display_name || user.username;
+
+                // Fetch and display badges
+                try {
+                    const badgesRes = await fetch(`/api/users/${username}/badges`);
+                    const badgesData = await badgesRes.json();
+                    
+                    if (badgesData.badges && badgesData.badges.length > 0) {
+                        const badgesContainer = document.getElementById('userBadges');
+                        badgesContainer.innerHTML = badgesData.badges.map(badge => `
+                            <div class="user-badge badge-tooltip" data-tooltip="${badge.name}">
+                                <img src="${badge.image_url}" alt="${badge.name}" onerror="this.parentElement.style.display='none'">
+                            </div>
+                        `).join('');
+                    }
+                } catch (e) {
+                    console.error('Error loading badges:', e);
+                }
 
                 // User ID
                 if (user.show_userid) {
@@ -505,7 +595,11 @@
                 // Show content
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('profileContent').classList.remove('hidden');
-                document.getElementById('footer').classList.remove('hidden');
+                
+                // Show footer unless premium user has hidden branding
+                if (!user.hide_branding) {
+                    document.getElementById('footer').classList.remove('hidden');
+                }
 
             } catch (error) {
                 console.error('Error loading profile:', error);
