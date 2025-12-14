@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance - hehe.cx</title>
+    <link rel="icon" type="image/png" href="/src/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #ffd700;
+            --purple: #8b5cf6;
+            --bg-dark: #0a0a0f;
+            --text: #f5f5f7;
+            --text-muted: #71717a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-image: 
+                radial-gradient(ellipse at top, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, rgba(255, 215, 0, 0.1) 0%, transparent 50%);
+        }
+
+        .container {
+            text-align: center;
+            max-width: 500px;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--gold), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 32px;
+        }
+
+        .icon {
+            font-size: 5rem;
+            margin-bottom: 24px;
+            display: block;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 32px;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 24px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 100px;
+            font-size: 0.95rem;
+            color: var(--purple);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--purple);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.9); }
+        }
+
+        .admin-link {
+            margin-top: 48px;
+            font-size: 0.85rem;
+        }
+
+        .admin-link a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .admin-link a:hover {
+            color: var(--purple);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">hehe.cx</div>
+        <span class="icon">🔧</span>
+        <h1>We'll Be Right Back</h1>
+        <p>
+            We're currently performing scheduled maintenance to improve your experience. 
+            This won't take long — please check back in a few minutes.
+        </p>
+        <div class="status">
+            <div class="status-dot"></div>
+            Maintenance in progress
+        </div>
+        <div class="admin-link">
+            <a href="/admin-panel-for-the-lolz">Admin Access</a>
+        </div>
+    </div>
+</body>
+</html>
+

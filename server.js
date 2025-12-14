@@ -161,6 +161,13 @@ async function initDatabase() {
                     expires_at TIMESTAMP NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
+
+                CREATE TABLE IF NOT EXISTS settings (
+                    key VARCHAR(50) PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
+
+                INSERT INTO settings (key, value) VALUES ('maintenance_mode', 'false') ON CONFLICT (key) DO NOTHING;
             `);
 
             // Run migrations for new columns
@@ -273,6 +280,13 @@ async function initDatabase() {
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
                 );
+
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
+
+                INSERT OR IGNORE INTO settings (key, value) VALUES ('maintenance_mode', 'false');
             `);
             
             // Migrations for new columns
@@ -366,6 +380,41 @@ async function insertAndReturn(table, data, returnFields = '*') {
     }
 }
 
+// ============ MAINTENANCE MODE ============
+
+// In-memory maintenance mode state (loaded from DB on startup)
+let maintenanceMode = false;
+
+// Maintenance mode middleware - defined before use
+const checkMaintenance = (req, res, next) => {
+    // Always allow these paths regardless of maintenance mode
+    if (req.path === '/maintenance' ||
+        req.path === '/maintenance.html' ||
+        req.path.startsWith('/admin-panel-for-the-lolz') ||
+        req.path.startsWith('/api/admin') ||
+        req.path.startsWith('/src/') ||
+        req.path.startsWith('/uploads/')) {
+        return next();
+    }
+
+    // If maintenance mode is off, allow everything
+    if (!maintenanceMode) {
+        return next();
+    }
+
+    // Admin session bypasses maintenance mode
+    if (req.session && req.session.admin) {
+        return next();
+    }
+
+    // Block everything else during maintenance
+    if (req.path.startsWith('/api/')) {
+        return res.status(503).json({ error: 'Site is under maintenance', maintenance: true });
+    }
+
+    return res.redirect('/maintenance');
+};
+
 // ============ MIDDLEWARE ============
 
 app.use(express.json());
@@ -389,6 +438,9 @@ app.use(session({
 if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
+
+// Apply maintenance check after session middleware
+app.use(checkMaintenance);
 
 // File upload configuration
 // Use memory storage for Supabase, disk storage for local
@@ -1574,10 +1626,36 @@ app.get('/api/admin/status', async (req, res) => {
     if (req.session.admin) {
         const admin = await queryOne('SELECT id, email, username, is_admin FROM users WHERE id = ?', [req.session.admin.id]);
         if (admin && admin.is_admin) {
-            return res.json({ authenticated: true, admin: { id: admin.id, email: admin.email, username: admin.username } });
+            return res.json({ 
+                authenticated: true, 
+                admin: { id: admin.id, email: admin.email, username: admin.username },
+                maintenance_mode: maintenanceMode
+            });
         }
     }
     res.json({ authenticated: false });
+});
+
+// Get maintenance mode status
+app.get('/api/admin/maintenance', requireAdmin, async (req, res) => {
+    res.json({ maintenance_mode: maintenanceMode });
+});
+
+// Toggle maintenance mode
+app.put('/api/admin/maintenance', requireAdmin, async (req, res) => {
+    try {
+        const { enabled } = req.body;
+        const newValue = enabled ? 'true' : 'false';
+        
+        await query("UPDATE settings SET value = ? WHERE key = 'maintenance_mode'", [newValue]);
+        maintenanceMode = enabled;
+        
+        console.log(`🔧 Maintenance mode ${enabled ? 'ENABLED' : 'DISABLED'} by admin`);
+        res.json({ success: true, maintenance_mode: maintenanceMode });
+    } catch (error) {
+        console.error('Toggle maintenance mode error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 
 // Search users
@@ -1997,6 +2075,10 @@ app.get('/api/profile/:username', async (req, res) => {
 
 // ============ PAGE ROUTES ============
 
+app.get('/maintenance', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'maintenance.html'));
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -2051,6 +2133,16 @@ app.get('/:username', async (req, res) => {
 async function start() {
     try {
         await initDatabase();
+        
+        // Load maintenance mode from database
+        try {
+            const setting = await queryOne("SELECT value FROM settings WHERE key = 'maintenance_mode'");
+            maintenanceMode = setting && setting.value === 'true';
+            console.log(`🔧 Maintenance mode: ${maintenanceMode ? 'ENABLED' : 'disabled'}`);
+        } catch (e) {
+            console.log('⚠️ Could not load maintenance mode setting');
+        }
+        
         app.listen(PORT, () => {
             console.log(`🚀 hehe.cx server running at http://localhost:${PORT}`);
             if (!USE_POSTGRES) {
