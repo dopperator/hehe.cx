@@ -842,6 +842,39 @@
             border-color: rgba(239, 68, 68, 0.3);
         }
 
+        /* Mobile menu toggle - hidden on desktop */
+        .menu-toggle {
+            display: none;
+            padding: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-toggle:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Sidebar overlay - hidden by default */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
         /* Responsive */
         @media (max-width: 1200px) {
             .content-grid {
@@ -868,21 +901,16 @@
                 padding: 20px;
             }
 
-            .mobile-header {
-                display: flex;
-                align-items: center;
-                gap: 16px;
-                margin-bottom: 24px;
+            .main-header {
+                gap: 12px;
+            }
+
+            .main-header h1 {
+                font-size: 1.4rem;
             }
 
             .menu-toggle {
                 display: flex;
-                padding: 10px;
-                background: var(--bg-card);
-                border: 1px solid var(--border);
-                border-radius: 10px;
-                color: var(--text);
-                cursor: pointer;
             }
 
             .platform-select {
@@ -1058,8 +1086,18 @@
         </div>
     </aside>
 
+    <!-- Mobile overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
     <main class="main">
         <div class="main-header">
+            <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
             <h1>Dashboard</h1>
             <div class="header-actions">
                 <a href="#" class="btn btn-ghost" id="viewPageBtn" target="_blank">
@@ -1800,6 +1838,9 @@
                 document.getElementById('linksSection').style.display = section === 'links' ? 'block' : 'none';
                 document.getElementById('appearanceSection').style.display = section === 'appearance' ? 'block' : 'none';
                 document.getElementById('premiumSection').style.display = section === 'premium' ? 'block' : 'none';
+                
+                // Close sidebar on mobile after selecting
+                closeSidebar();
             });
         });
 
@@ -2138,6 +2179,17 @@
         async function logout() {
             await fetch('/api/auth/logout', { method: 'POST' });
             window.location.href = '/';
+        }
+
+        // Mobile sidebar functions
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('active');
         }
 
         function showToast(message, type = 'success') {
