@@ -495,13 +495,63 @@
         .volume-btn:not(.muted) svg.volume-on {
             display: block;
         }
+
+        /* Music Toggle Button */
+        .music-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 74px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .music-btn.visible {
+            display: flex;
+        }
+
+        .music-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+
+        .music-btn.muted svg.music-on,
+        .music-btn:not(.muted) svg.music-off {
+            display: none;
+        }
+
+        .music-btn.muted svg.music-off,
+        .music-btn:not(.muted) svg.music-on {
+            display: block;
+        }
+
+        /* Hidden audio/iframe for background music */
+        .bg-music-container {
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
     <div class="page-bg" id="pageBg"></div>
 
     <!-- Volume toggle for video backgrounds -->
-    <button class="volume-btn muted" id="volumeBtn" onclick="toggleVolume()" title="Toggle audio">
+    <button class="volume-btn muted" id="volumeBtn" onclick="toggleVolume()" title="Toggle video audio">
         <svg class="volume-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
             <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
@@ -513,6 +563,26 @@
             <line x1="17" y1="9" x2="23" y2="15"/>
         </svg>
     </button>
+
+    <!-- Music toggle for background music -->
+    <button class="music-btn muted" id="musicBtn" onclick="toggleMusic()" title="Toggle music">
+        <svg class="music-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+        </svg>
+        <svg class="music-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+            <line x1="1" y1="1" x2="23" y2="23" stroke-width="2"/>
+        </svg>
+    </button>
+
+    <!-- Hidden container for background music -->
+    <div class="bg-music-container" id="bgMusicContainer">
+        <audio id="bgAudio" loop></audio>
+    </div>
 
     <div class="loading" id="loading">
         <div class="loading-spinner"></div>
@@ -594,6 +664,9 @@
         }
 
         let bgVideo = null;
+        let bgAudio = null;
+        let musicMuted = true;
+        let profileUser = null;
 
         async function loadProfile() {
             const username = window.location.pathname.slice(1);
@@ -717,9 +790,181 @@
                     document.getElementById('footer').classList.remove('hidden');
                 }
 
+                // Store user for music handling
+                profileUser = user;
+
+                // Setup background music
+                setupBackgroundMusic(user);
+
             } catch (error) {
                 console.error('Error loading profile:', error);
                 window.location.href = '/404.html';
+            }
+        }
+
+        function setupBackgroundMusic(user) {
+            if (!user.music_type || user.music_type === 'none') return;
+
+            // If user has video with audio and prefers video audio, don't setup custom music
+            if (user.background_type === 'video' && user.background_video && !user.prefer_music_over_video) {
+                return;
+            }
+
+            const musicBtn = document.getElementById('musicBtn');
+            musicBtn.classList.add('visible');
+
+            // Handle different music types
+            if (user.music_type === 'file' && user.music_url) {
+                setupCustomAudio(user);
+            } else if (user.music_type === 'youtube' && user.music_url) {
+                setupYouTubeAudio(user);
+            } else if (user.music_type === 'spotify' && user.music_url) {
+                setupSpotifyEmbed(user);
+            } else if (user.music_type === 'soundcloud' && user.music_url) {
+                setupSoundCloudEmbed(user);
+            }
+        }
+
+        function setupCustomAudio(user) {
+            bgAudio = document.getElementById('bgAudio');
+            bgAudio.src = getImageUrl(user.music_url);
+            
+            // Set start time
+            if (user.music_start > 0) {
+                bgAudio.currentTime = user.music_start;
+            }
+
+            // Handle end time
+            if (user.music_end > 0) {
+                bgAudio.addEventListener('timeupdate', function() {
+                    if (this.currentTime >= user.music_end) {
+                        this.currentTime = user.music_start || 0;
+                    }
+                });
+            }
+
+            // If video has audio preference set to music, mute video
+            if (bgVideo && user.prefer_music_over_video) {
+                bgVideo.muted = true;
+                document.getElementById('volumeBtn').classList.add('muted');
+            }
+        }
+
+        function setupYouTubeAudio(user) {
+            // Extract video ID from various YouTube URL formats
+            const videoId = extractYouTubeId(user.music_url);
+            if (!videoId) return;
+
+            const container = document.getElementById('bgMusicContainer');
+            const startTime = user.music_start || 0;
+            const endTime = user.music_end || 0;
+            
+            // Create YouTube embed (audio only via small hidden iframe)
+            const iframe = document.createElement('iframe');
+            iframe.id = 'ytPlayer';
+            iframe.width = '1';
+            iframe.height = '1';
+            iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=0&enablejsapi=1&start=${startTime}${endTime ? '&end=' + endTime : ''}&loop=1&playlist=${videoId}`;
+            iframe.allow = 'autoplay';
+            iframe.style.display = 'none';
+            container.appendChild(iframe);
+            
+            bgAudio = { 
+                type: 'youtube', 
+                iframe: iframe,
+                play: () => iframe.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*'),
+                pause: () => iframe.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*')
+            };
+        }
+
+        function extractYouTubeId(url) {
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+                /youtube\.com\/watch\?.*v=([^&\n?#]+)/
+            ];
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) return match[1];
+            }
+            return null;
+        }
+
+        function setupSpotifyEmbed(user) {
+            // Extract track/album ID from Spotify URL
+            const match = user.music_url.match(/spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]+)/);
+            if (!match) return;
+
+            const [, type, id] = match;
+            const container = document.getElementById('bgMusicContainer');
+            
+            const iframe = document.createElement('iframe');
+            iframe.id = 'spotifyPlayer';
+            iframe.src = `https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0`;
+            iframe.width = '300';
+            iframe.height = '80';
+            iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+            iframe.style.cssText = 'position: fixed; bottom: 70px; right: 20px; border-radius: 12px; border: none; z-index: 99; display: none;';
+            container.appendChild(iframe);
+            
+            bgAudio = { type: 'spotify', iframe: iframe };
+        }
+
+        function setupSoundCloudEmbed(user) {
+            const container = document.getElementById('bgMusicContainer');
+            
+            const iframe = document.createElement('iframe');
+            iframe.id = 'scPlayer';
+            iframe.width = '100%';
+            iframe.height = '166';
+            iframe.scrolling = 'no';
+            iframe.frameBorder = 'no';
+            iframe.allow = 'autoplay';
+            iframe.src = `https://w.soundcloud.com/player/?url=${encodeURIComponent(user.music_url)}&color=%23ff5500&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`;
+            iframe.style.cssText = 'position: fixed; bottom: 70px; right: 20px; width: 300px; border-radius: 12px; z-index: 99; display: none;';
+            container.appendChild(iframe);
+            
+            bgAudio = { type: 'soundcloud', iframe: iframe };
+        }
+
+        function toggleMusic() {
+            const musicBtn = document.getElementById('musicBtn');
+            
+            if (musicMuted) {
+                // Unmute / Play
+                musicMuted = false;
+                musicBtn.classList.remove('muted');
+                
+                if (bgAudio) {
+                    if (bgAudio.type === 'youtube') {
+                        bgAudio.play();
+                    } else if (bgAudio.type === 'spotify' || bgAudio.type === 'soundcloud') {
+                        // Show the embed player for these
+                        bgAudio.iframe.style.display = 'block';
+                    } else {
+                        // Regular audio element
+                        bgAudio.play().catch(e => console.log('Audio play blocked:', e));
+                    }
+                }
+
+                // If we have video with audio and user prefers music, mute video
+                if (bgVideo && profileUser?.prefer_music_over_video) {
+                    bgVideo.muted = true;
+                    document.getElementById('volumeBtn').classList.add('muted');
+                }
+            } else {
+                // Mute / Pause
+                musicMuted = true;
+                musicBtn.classList.add('muted');
+                
+                if (bgAudio) {
+                    if (bgAudio.type === 'youtube') {
+                        bgAudio.pause();
+                    } else if (bgAudio.type === 'spotify' || bgAudio.type === 'soundcloud') {
+                        bgAudio.iframe.style.display = 'none';
+                    } else {
+                        bgAudio.pause();
+                    }
+                }
             }
         }
 
@@ -748,6 +993,11 @@
             if (bgVideo.muted) {
                 bgVideo.muted = false;
                 volumeBtn.classList.remove('muted');
+                
+                // If user prefers music over video and music is playing, pause music
+                if (profileUser?.prefer_music_over_video && !musicMuted && bgAudio) {
+                    toggleMusic(); // This will mute the music
+                }
             } else {
                 bgVideo.muted = true;
                 volumeBtn.classList.add('muted');

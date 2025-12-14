@@ -1166,6 +1166,79 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Background Music Section -->
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 12px;">🎵 Background Music</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">
+                            Add a song to play when someone visits your profile.
+                        </p>
+                        
+                        <div class="form-group">
+                            <label>Music Source</label>
+                            <select id="musicType" onchange="onMusicTypeChange()">
+                                <option value="none">None</option>
+                                <option value="youtube">YouTube</option>
+                                <option value="spotify">Spotify</option>
+                                <option value="soundcloud">SoundCloud</option>
+                                <option value="file" id="fileOption" style="display: none;">Custom Audio (Premium)</option>
+                            </select>
+                        </div>
+
+                        <div id="musicUrlSection" style="display: none;">
+                            <div class="form-group">
+                                <label for="musicUrl">Music URL</label>
+                                <input type="url" id="musicUrl" placeholder="Paste YouTube, Spotify, or SoundCloud link...">
+                                <small id="musicUrlHint">Paste a valid link to a song or video</small>
+                            </div>
+                        </div>
+
+                        <div id="audioUploadSection" style="display: none;">
+                            <div class="form-group">
+                                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
+                                    Upload your own audio file. MP3, WAV, or OGG, max 5MB.
+                                </p>
+                                <input type="file" id="audioInput" class="file-input" accept=".mp3,.wav,.ogg,audio/mpeg,audio/wav,audio/ogg">
+                                <div style="display: flex; gap: 12px; align-items: center;">
+                                    <button class="btn btn-ghost" onclick="document.getElementById('audioInput').click()">Upload Audio</button>
+                                    <button class="btn btn-danger" id="removeAudioBtn" style="display: none;" onclick="removeAudio()">Remove</button>
+                                </div>
+                                <div id="currentAudioFile" style="display: none; margin-top: 12px; padding: 12px; background: var(--bg-input); border-radius: 8px;">
+                                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 8px;">Current audio:</p>
+                                    <audio id="audioPreview" controls style="width: 100%;"></audio>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="musicTimingSection" style="display: none;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="musicStart">Start Time (seconds)</label>
+                                    <input type="number" id="musicStart" min="0" value="0" placeholder="0">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="musicEnd">End Time (seconds)</label>
+                                    <input type="number" id="musicEnd" min="0" value="0" placeholder="0 = full song">
+                                </div>
+                            </div>
+                            <small style="color: var(--text-muted); display: block; margin-top: 8px;">Set end to 0 to play the full song</small>
+                        </div>
+
+                        <div id="videoAudioPrioritySection" style="display: none; margin-top: 16px;">
+                            <div class="toggle-group" style="margin-bottom: 0;">
+                                <div class="toggle-info">
+                                    <h4>Prefer Custom Music</h4>
+                                    <p>Play your custom music instead of video background audio</p>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="preferMusicOverVideo">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-purple" style="margin-top: 16px;" onclick="saveMusicSettings()">Save Music Settings</button>
+                    </div>
                 </div>
 
                 <!-- Links Section -->
@@ -1319,9 +1392,9 @@
 
                     <div id="bgVideoUpload" style="display: none;">
                         <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
-                            Upload a video background. MP4 only, max 15 seconds, max 50MB.
+                            Upload a video background. MP4, MOV, or WebM, max 15 seconds, max 50MB.
                         </p>
-                        <input type="file" id="videoInput" class="file-input" accept=".mp4,video/mp4">
+                        <input type="file" id="videoInput" class="file-input" accept=".mp4,.mov,.webm,video/mp4,video/quicktime,video/webm">
                         <div style="display: flex; gap: 12px; align-items: center;">
                             <button class="btn btn-ghost" onclick="document.getElementById('videoInput').click()">Upload Video</button>
                             <button class="btn btn-danger" id="removeVideoBtn" style="display: none;" onclick="removeVideo()">Remove Video</button>
@@ -1470,6 +1543,48 @@
         let links = [];
         let selectedPlatform = null;
         let userBadges = [];
+
+        // URL validation patterns for platforms
+        const platformPatterns = {
+            bluesky: /^https?:\/\/(www\.)?(bsky\.app|bsky\.social)\//i,
+            cashapp: /^https?:\/\/(www\.)?cash\.app\//i,
+            deviantart: /^https?:\/\/(www\.)?deviantart\.com\//i,
+            discord: /^https?:\/\/(www\.)?(discord\.(gg|com)|discordapp\.com)\//i,
+            github: /^https?:\/\/(www\.)?github\.com\//i,
+            instagram: /^https?:\/\/(www\.)?instagram\.com\//i,
+            kick: /^https?:\/\/(www\.)?kick\.com\//i,
+            linkedin: /^https?:\/\/(www\.)?linkedin\.com\//i,
+            pinterest: /^https?:\/\/(www\.)?pinterest\.(com|ca|co\.uk)\//i,
+            reddit: /^https?:\/\/(www\.)?reddit\.com\//i,
+            roblox: /^https?:\/\/(www\.)?roblox\.com\//i,
+            snapchat: /^https?:\/\/(www\.)?(snapchat\.com|t\.snapchat\.com)\//i,
+            soundcloud: /^https?:\/\/(www\.)?(soundcloud\.com|on\.soundcloud\.com)\//i,
+            spotify: /^https?:\/\/(www\.|open\.)?spotify\.com\//i,
+            steam: /^https?:\/\/(www\.|store\.)?steam(community|powered)?\.com\//i,
+            tiktok: /^https?:\/\/(www\.)?(tiktok\.com|vm\.tiktok\.com)\//i,
+            venmo: /^https?:\/\/(www\.)?venmo\.com\//i,
+            x: /^https?:\/\/(www\.)?(twitter\.com|x\.com)\//i,
+            youtube: /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//i
+        };
+
+        // Music URL patterns
+        const musicPatterns = {
+            youtube: /^https?:\/\/(www\.)?(youtube\.com\/(watch\?v=|embed\/|shorts\/)|youtu\.be\/)/i,
+            spotify: /^https?:\/\/(www\.|open\.)?spotify\.com\/(track|album|playlist)\//i,
+            soundcloud: /^https?:\/\/(www\.)?(soundcloud\.com|on\.soundcloud\.com)\//i
+        };
+
+        function validatePlatformUrl(platform, url) {
+            const pattern = platformPatterns[platform.toLowerCase()];
+            if (!pattern) return true;
+            return pattern.test(url);
+        }
+
+        function validateMusicUrl(type, url) {
+            const pattern = musicPatterns[type];
+            if (!pattern) return true;
+            return pattern.test(url);
+        }
 
         // Platform icons map
         // Platform logos - using images from src/logos/
@@ -1622,6 +1737,9 @@
                 document.getElementById('gradientPicker').classList.remove('active');
                 document.getElementById('bgVideoUpload').style.display = 'block';
             }
+
+            // Initialize music settings
+            initMusicSettings();
 
             updatePreview();
         }
@@ -1859,12 +1977,39 @@
             });
         });
 
+        // Platform URL hints
+        const platformHints = {
+            bluesky: 'https://bsky.app/profile/username',
+            cashapp: 'https://cash.app/$username',
+            deviantart: 'https://deviantart.com/username',
+            discord: 'https://discord.gg/invite-code',
+            github: 'https://github.com/username',
+            instagram: 'https://instagram.com/username',
+            kick: 'https://kick.com/username',
+            linkedin: 'https://linkedin.com/in/username',
+            pinterest: 'https://pinterest.com/username',
+            reddit: 'https://reddit.com/user/username',
+            roblox: 'https://roblox.com/users/123456789',
+            snapchat: 'https://snapchat.com/add/username',
+            soundcloud: 'https://soundcloud.com/username',
+            spotify: 'https://open.spotify.com/artist/...',
+            steam: 'https://steamcommunity.com/id/username',
+            tiktok: 'https://tiktok.com/@username',
+            venmo: 'https://venmo.com/username',
+            x: 'https://x.com/username',
+            youtube: 'https://youtube.com/@username'
+        };
+
         // Platform selection
         document.querySelectorAll('.platform-option').forEach(option => {
             option.addEventListener('click', () => {
                 document.querySelectorAll('.platform-option').forEach(o => o.classList.remove('selected'));
                 option.classList.add('selected');
                 selectedPlatform = option.dataset.platform;
+                
+                // Update URL placeholder
+                const urlInput = document.getElementById('linkUrl');
+                urlInput.placeholder = platformHints[selectedPlatform] || 'https://...';
             });
         });
 
@@ -2054,6 +2199,12 @@
                 return;
             }
 
+            // Validate URL matches the platform
+            if (!validatePlatformUrl(selectedPlatform, url)) {
+                showToast(`Please enter a valid ${selectedPlatform} link`, 'error');
+                return;
+            }
+
             try {
                 const res = await fetch('/api/links', {
                     method: 'POST',
@@ -2191,6 +2342,179 @@
             document.getElementById('sidebar').classList.remove('open');
             document.getElementById('sidebarOverlay').classList.remove('active');
         }
+
+        // Music settings functions
+        function onMusicTypeChange() {
+            const type = document.getElementById('musicType').value;
+            const urlSection = document.getElementById('musicUrlSection');
+            const uploadSection = document.getElementById('audioUploadSection');
+            const timingSection = document.getElementById('musicTimingSection');
+            
+            urlSection.style.display = (type === 'youtube' || type === 'spotify' || type === 'soundcloud') ? 'block' : 'none';
+            uploadSection.style.display = type === 'file' ? 'block' : 'none';
+            timingSection.style.display = type !== 'none' ? 'block' : 'none';
+            
+            // Update hint text
+            const hints = {
+                youtube: 'Paste a YouTube video URL (e.g., https://youtube.com/watch?v=...)',
+                spotify: 'Paste a Spotify track URL (e.g., https://open.spotify.com/track/...)',
+                soundcloud: 'Paste a SoundCloud track URL (e.g., https://soundcloud.com/...)'
+            };
+            document.getElementById('musicUrlHint').textContent = hints[type] || '';
+            
+            updateVideoAudioPriorityVisibility();
+        }
+
+        function updateVideoAudioPriorityVisibility() {
+            const hasVideoWithAudio = currentUser.background_type === 'video' && currentUser.background_video;
+            const hasMusicSet = document.getElementById('musicType').value !== 'none';
+            
+            document.getElementById('videoAudioPrioritySection').style.display = 
+                (hasVideoWithAudio && hasMusicSet) ? 'block' : 'none';
+        }
+
+        function initMusicSettings() {
+            // Show file option for premium users
+            if (currentUser.is_premium) {
+                document.getElementById('fileOption').style.display = 'block';
+            }
+            
+            // Set current values
+            document.getElementById('musicType').value = currentUser.music_type || 'none';
+            document.getElementById('musicUrl').value = currentUser.music_url || '';
+            document.getElementById('musicStart').value = currentUser.music_start || 0;
+            document.getElementById('musicEnd').value = currentUser.music_end || 0;
+            document.getElementById('preferMusicOverVideo').checked = currentUser.prefer_music_over_video;
+            
+            // Show current audio file if type is file
+            if (currentUser.music_type === 'file' && currentUser.music_url) {
+                document.getElementById('removeAudioBtn').style.display = 'inline-flex';
+                document.getElementById('currentAudioFile').style.display = 'block';
+                document.getElementById('audioPreview').src = getImageUrl(currentUser.music_url);
+            }
+            
+            // Trigger change to show/hide sections
+            onMusicTypeChange();
+        }
+
+        async function saveMusicSettings() {
+            const musicType = document.getElementById('musicType').value;
+            const musicUrl = document.getElementById('musicUrl').value;
+            const musicStart = parseInt(document.getElementById('musicStart').value) || 0;
+            const musicEnd = parseInt(document.getElementById('musicEnd').value) || 0;
+            const preferMusic = document.getElementById('preferMusicOverVideo').checked;
+
+            // Validate music URL if a streaming type is selected
+            if (musicType !== 'none' && musicType !== 'file') {
+                if (!musicUrl) {
+                    showToast('Please enter a music URL', 'error');
+                    return;
+                }
+                if (!validateMusicUrl(musicType, musicUrl)) {
+                    const typeLabels = { youtube: 'YouTube', spotify: 'Spotify', soundcloud: 'SoundCloud' };
+                    showToast(`Please enter a valid ${typeLabels[musicType]} link`, 'error');
+                    return;
+                }
+            }
+
+            try {
+                const res = await fetch('/api/profile/music', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        music_type: musicType,
+                        music_url: musicType !== 'file' ? musicUrl : undefined,
+                        music_start: musicStart,
+                        music_end: musicEnd,
+                        prefer_music_over_video: preferMusic
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    currentUser.music_type = musicType;
+                    currentUser.music_start = musicStart;
+                    currentUser.music_end = musicEnd;
+                    currentUser.prefer_music_over_video = preferMusic;
+                    if (musicType !== 'file') currentUser.music_url = musicUrl;
+                    showToast('Music settings saved!', 'success');
+                } else {
+                    showToast(data.error || 'Failed to save', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to save music settings', 'error');
+            }
+        }
+
+        async function removeAudio() {
+            if (!confirm('Remove your custom audio?')) return;
+
+            try {
+                const res = await fetch('/api/profile/audio', { method: 'DELETE' });
+                const data = await res.json();
+
+                if (data.success) {
+                    currentUser.music_type = 'none';
+                    currentUser.music_url = null;
+                    
+                    document.getElementById('musicType').value = 'none';
+                    document.getElementById('removeAudioBtn').style.display = 'none';
+                    document.getElementById('currentAudioFile').style.display = 'none';
+                    document.getElementById('audioPreview').src = '';
+                    
+                    onMusicTypeChange();
+                    showToast('Audio removed', 'success');
+                } else {
+                    showToast(data.error || 'Failed to remove audio', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to remove audio', 'error');
+            }
+        }
+
+        // Audio upload handler
+        document.getElementById('audioInput')?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Client-side validation
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Audio file must be under 5MB', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('audio', file);
+
+            try {
+                showToast('Uploading audio...', 'success');
+                
+                const res = await fetch('/api/profile/audio', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    currentUser.music_url = data.music_url;
+                    currentUser.music_type = 'file';
+                    
+                    document.getElementById('musicType').value = 'file';
+                    document.getElementById('removeAudioBtn').style.display = 'inline-flex';
+                    document.getElementById('currentAudioFile').style.display = 'block';
+                    document.getElementById('audioPreview').src = getImageUrl(data.music_url);
+                    
+                    onMusicTypeChange();
+                    showToast('Audio uploaded!', 'success');
+                } else {
+                    showToast(data.error || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                showToast('Upload failed', 'error');
+            }
+        });
 
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');

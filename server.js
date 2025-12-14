@@ -58,7 +58,7 @@ if (USE_SUPABASE_STORAGE) {
 
 // Ensure upload directories exist (for local development)
 if (!USE_SUPABASE_STORAGE) {
-    const uploadDirs = ['uploads/avatars', 'uploads/backgrounds', 'uploads/videos'];
+    const uploadDirs = ['uploads/avatars', 'uploads/backgrounds', 'uploads/videos', 'uploads/audio'];
     uploadDirs.forEach(dir => {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
@@ -102,6 +102,11 @@ async function initDatabase() {
                     background_video VARCHAR(500),
                     video_audio_default BOOLEAN DEFAULT false,
                     repped_badge_id INTEGER REFERENCES badges(id) ON DELETE SET NULL,
+                    music_type VARCHAR(20) DEFAULT 'none',
+                    music_url VARCHAR(500),
+                    music_start INTEGER DEFAULT 0,
+                    music_end INTEGER DEFAULT 0,
+                    prefer_music_over_video BOOLEAN DEFAULT false,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
 
@@ -167,6 +172,11 @@ async function initDatabase() {
                 await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS background_video VARCHAR(500)`);
                 await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS video_audio_default BOOLEAN DEFAULT false`);
                 await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS repped_badge_id INTEGER REFERENCES badges(id) ON DELETE SET NULL`);
+                await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS music_type VARCHAR(20) DEFAULT 'none'`);
+                await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS music_url VARCHAR(500)`);
+                await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS music_start INTEGER DEFAULT 0`);
+                await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS music_end INTEGER DEFAULT 0`);
+                await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS prefer_music_over_video BOOLEAN DEFAULT false`);
             } catch (e) {
                 // Columns may already exist
             }
@@ -207,6 +217,11 @@ async function initDatabase() {
                     background_video TEXT,
                     video_audio_default INTEGER DEFAULT 0,
                     repped_badge_id INTEGER,
+                    music_type TEXT DEFAULT 'none',
+                    music_url TEXT,
+                    music_start INTEGER DEFAULT 0,
+                    music_end INTEGER DEFAULT 0,
+                    prefer_music_over_video INTEGER DEFAULT 0,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (repped_badge_id) REFERENCES badges(id) ON DELETE SET NULL
                 );
@@ -269,7 +284,12 @@ async function initDatabase() {
                 'ALTER TABLE users ADD COLUMN deactivation_reason TEXT',
                 'ALTER TABLE users ADD COLUMN background_video TEXT',
                 'ALTER TABLE users ADD COLUMN video_audio_default INTEGER DEFAULT 0',
-                'ALTER TABLE users ADD COLUMN repped_badge_id INTEGER'
+                'ALTER TABLE users ADD COLUMN repped_badge_id INTEGER',
+                "ALTER TABLE users ADD COLUMN music_type TEXT DEFAULT 'none'",
+                'ALTER TABLE users ADD COLUMN music_url TEXT',
+                'ALTER TABLE users ADD COLUMN music_start INTEGER DEFAULT 0',
+                'ALTER TABLE users ADD COLUMN music_end INTEGER DEFAULT 0',
+                'ALTER TABLE users ADD COLUMN prefer_music_over_video INTEGER DEFAULT 0'
             ];
             
             for (const migration of migrations) {
@@ -379,6 +399,7 @@ const storage = USE_SUPABASE_STORAGE
             let folder = 'uploads/backgrounds';
             if (file.fieldname === 'avatar') folder = 'uploads/avatars';
             else if (file.fieldname === 'video') folder = 'uploads/videos';
+            else if (file.fieldname === 'audio') folder = 'uploads/audio';
             cb(null, folder);
         },
         filename: (req, file, cb) => {
@@ -394,7 +415,8 @@ const fileFilter = (req, file, cb) => {
     const allowedTypes = {
         avatar: isPremium ? ['image/png', 'image/gif'] : ['image/png'],
         background: isPremium ? ['image/png', 'image/jpeg', 'image/gif'] : ['image/png', 'image/jpeg'],
-        video: isPremium ? ['video/mp4'] : []
+        video: isPremium ? ['video/mp4', 'video/webm', 'video/quicktime'] : [],
+        audio: isPremium ? ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3'] : []
     };
     
     const fieldAllowed = allowedTypes[file.fieldname] || [];
@@ -404,6 +426,8 @@ const fileFilter = (req, file, cb) => {
     } else {
         if (file.fieldname === 'video' && !isPremium) {
             cb(new Error('Video backgrounds are a premium feature'), false);
+        } else if (file.fieldname === 'audio' && !isPremium) {
+            cb(new Error('Custom audio uploads are a premium feature'), false);
         } else {
             cb(new Error(`Invalid file type. Allowed: ${fieldAllowed.join(', ')}`), false);
         }
@@ -604,6 +628,50 @@ async function sendAdminVerificationEmail(email, code) {
     }
 }
 
+// ============ URL VALIDATION ============
+
+// Platform URL patterns
+const platformPatterns = {
+    bluesky: /^https?:\/\/(www\.)?(bsky\.app|bsky\.social)\//i,
+    cashapp: /^https?:\/\/(www\.)?cash\.app\//i,
+    deviantart: /^https?:\/\/(www\.)?deviantart\.com\//i,
+    discord: /^https?:\/\/(www\.)?(discord\.(gg|com)|discordapp\.com)\//i,
+    github: /^https?:\/\/(www\.)?github\.com\//i,
+    instagram: /^https?:\/\/(www\.)?instagram\.com\//i,
+    kick: /^https?:\/\/(www\.)?kick\.com\//i,
+    linkedin: /^https?:\/\/(www\.)?linkedin\.com\//i,
+    pinterest: /^https?:\/\/(www\.)?pinterest\.(com|ca|co\.uk)\//i,
+    reddit: /^https?:\/\/(www\.)?reddit\.com\//i,
+    roblox: /^https?:\/\/(www\.)?roblox\.com\//i,
+    snapchat: /^https?:\/\/(www\.)?(snapchat\.com|t\.snapchat\.com)\//i,
+    soundcloud: /^https?:\/\/(www\.)?(soundcloud\.com|on\.soundcloud\.com)\//i,
+    spotify: /^https?:\/\/(www\.|open\.)?spotify\.com\//i,
+    steam: /^https?:\/\/(www\.|store\.)?steam(community|powered)?\.com\//i,
+    tiktok: /^https?:\/\/(www\.)?(tiktok\.com|vm\.tiktok\.com)\//i,
+    venmo: /^https?:\/\/(www\.)?venmo\.com\//i,
+    x: /^https?:\/\/(www\.)?(twitter\.com|x\.com)\//i,
+    youtube: /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//i
+};
+
+// Music platform patterns
+const musicPatterns = {
+    youtube: /^https?:\/\/(www\.)?(youtube\.com\/(watch\?v=|embed\/|shorts\/)|youtu\.be\/)/i,
+    spotify: /^https?:\/\/(www\.|open\.)?spotify\.com\/(track|album|playlist)\//i,
+    soundcloud: /^https?:\/\/(www\.)?(soundcloud\.com|on\.soundcloud\.com)\//i
+};
+
+function validatePlatformUrl(platform, url) {
+    const pattern = platformPatterns[platform.toLowerCase()];
+    if (!pattern) return true; // Unknown platform, allow any URL
+    return pattern.test(url);
+}
+
+function validateMusicUrl(type, url) {
+    const pattern = musicPatterns[type];
+    if (!pattern) return true;
+    return pattern.test(url);
+}
+
 // ============ API ROUTES ============
 
 // Check auth status
@@ -613,7 +681,8 @@ app.get('/api/auth/status', async (req, res) => {
             const user = await queryOne(
                 `SELECT id, email, username, display_name, bio, avatar, background, 
                         background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding,
-                        background_video, video_audio_default, repped_badge_id 
+                        background_video, video_audio_default, repped_badge_id,
+                        music_type, music_url, music_start, music_end, prefer_music_over_video 
                  FROM users WHERE id = ?`,
                 [req.session.user.id]
             );
@@ -895,7 +964,8 @@ app.put('/api/profile', requireAuth, async (req, res) => {
         const user = await queryOne(
             `SELECT id, email, username, display_name, bio, avatar, background, 
                     background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding,
-                    background_video, video_audio_default, repped_badge_id 
+                    background_video, video_audio_default, repped_badge_id,
+                    music_type, music_url, music_start, music_end, prefer_music_over_video 
              FROM users WHERE id = ?`,
             [req.session.user.id]
         );
@@ -1062,6 +1132,131 @@ app.delete('/api/profile/video', requireAuth, async (req, res) => {
     }
 });
 
+// Update music settings
+app.put('/api/profile/music', requireAuth, async (req, res) => {
+    try {
+        const { music_type, music_url, music_start, music_end, prefer_music_over_video } = req.body;
+        
+        // Validate music_type
+        const validTypes = ['none', 'youtube', 'spotify', 'soundcloud', 'file'];
+        if (music_type && !validTypes.includes(music_type)) {
+            return res.status(400).json({ error: 'Invalid music type' });
+        }
+        
+        // Validate music URL matches the type
+        if (music_url && music_type && music_type !== 'none' && music_type !== 'file') {
+            if (!validateMusicUrl(music_type, music_url)) {
+                const typeLabels = { youtube: 'YouTube', spotify: 'Spotify', soundcloud: 'SoundCloud' };
+                return res.status(400).json({ error: `URL must be a valid ${typeLabels[music_type]} link` });
+            }
+        }
+        
+        // If setting to file type, user must be premium and have already uploaded
+        if (music_type === 'file') {
+            const user = await queryOne('SELECT is_premium, music_url FROM users WHERE id = ?', [req.session.user.id]);
+            if (!user?.is_premium) {
+                return res.status(403).json({ error: 'Custom audio is a premium feature' });
+            }
+        }
+        
+        const preferMusicValue = USE_POSTGRES ? prefer_music_over_video : (prefer_music_over_video ? 1 : 0);
+        
+        await query(
+            `UPDATE users SET 
+                music_type = COALESCE(?, music_type),
+                music_url = COALESCE(?, music_url),
+                music_start = COALESCE(?, music_start),
+                music_end = COALESCE(?, music_end),
+                prefer_music_over_video = COALESCE(?, prefer_music_over_video)
+            WHERE id = ?`,
+            [music_type, music_url, music_start || 0, music_end || 0, preferMusicValue, req.session.user.id]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Update music error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Upload custom audio (Premium only)
+app.post('/api/profile/audio', requireAuth, checkFileSize('audio'), async (req, res) => {
+    try {
+        // Check if user is premium
+        const user = await queryOne('SELECT is_premium, music_url, music_type FROM users WHERE id = ?', [req.session.user.id]);
+        
+        if (!user?.is_premium) {
+            return res.status(403).json({ error: 'Custom audio uploads are a premium feature' });
+        }
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+        
+        // Check file size (5MB max for audio)
+        if (req.file.size > 5 * 1024 * 1024) {
+            if (!USE_SUPABASE_STORAGE && req.file.path) {
+                fs.unlinkSync(req.file.path);
+            }
+            return res.status(400).json({ error: 'Audio file must be under 5MB' });
+        }
+        
+        let audioUrl;
+        
+        if (USE_SUPABASE_STORAGE) {
+            // Delete old audio from Supabase if it was a file
+            if (user?.music_type === 'file' && user?.music_url) {
+                await deleteFromSupabase('audio', user.music_url);
+            }
+            
+            // Upload to Supabase Storage
+            const fileName = `${req.session.user.id}/${uuidv4()}${path.extname(req.file.originalname)}`;
+            audioUrl = await uploadToSupabase('audio', fileName, req.file.buffer, req.file.mimetype);
+        } else {
+            // Local storage - delete old file
+            if (user?.music_type === 'file' && user?.music_url && fs.existsSync(user.music_url)) {
+                fs.unlinkSync(user.music_url);
+            }
+            audioUrl = req.file.path.replace(/\\/g, '/');
+        }
+        
+        await query(
+            'UPDATE users SET music_url = ?, music_type = ? WHERE id = ?',
+            [audioUrl, 'file', req.session.user.id]
+        );
+        
+        res.json({ success: true, music_url: audioUrl });
+    } catch (error) {
+        console.error('Audio upload error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Delete custom audio
+app.delete('/api/profile/audio', requireAuth, async (req, res) => {
+    try {
+        const user = await queryOne('SELECT music_url, music_type FROM users WHERE id = ?', [req.session.user.id]);
+        
+        if (user?.music_type === 'file' && user?.music_url) {
+            if (USE_SUPABASE_STORAGE) {
+                await deleteFromSupabase('audio', user.music_url);
+            } else if (fs.existsSync(user.music_url)) {
+                fs.unlinkSync(user.music_url);
+            }
+        }
+        
+        await query(
+            'UPDATE users SET music_url = NULL, music_type = ? WHERE id = ?',
+            ['none', req.session.user.id]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete audio error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Get user's own badges
 app.get('/api/profile/badges', requireAuth, async (req, res) => {
     try {
@@ -1155,6 +1350,11 @@ app.post('/api/links', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'Platform and URL are required' });
         }
         
+        // Validate URL matches the platform
+        if (!validatePlatformUrl(platform, url)) {
+            return res.status(400).json({ error: `URL must be a valid ${platform} link` });
+        }
+        
         const maxResult = await queryOne(
             'SELECT COALESCE(MAX(display_order), 0) as max FROM links WHERE user_id = ?',
             [req.session.user.id]
@@ -1187,6 +1387,13 @@ app.put('/api/links/:id', requireAuth, async (req, res) => {
         
         if (!link) {
             return res.status(404).json({ error: 'Link not found' });
+        }
+        
+        // Validate URL matches the platform (use new platform or existing)
+        const targetPlatform = platform || link.platform;
+        const targetUrl = url || link.url;
+        if (url && !validatePlatformUrl(targetPlatform, targetUrl)) {
+            return res.status(400).json({ error: `URL must be a valid ${targetPlatform} link` });
         }
         
         const isActiveValue = USE_POSTGRES ? is_active : (is_active === undefined ? undefined : (is_active ? 1 : 0));
@@ -1763,6 +1970,7 @@ app.get('/api/profile/:username', async (req, res) => {
             `SELECT u.id, u.username, u.display_name, u.bio, u.avatar, u.background, 
                     u.background_type, u.gradient_start, u.gradient_end, u.show_userid, u.is_premium, u.hide_branding,
                     u.background_video, u.video_audio_default, u.repped_badge_id,
+                    u.music_type, u.music_url, u.music_start, u.music_end, u.prefer_music_over_video,
                     b.name as repped_badge_name, b.image_url as repped_badge_image
              FROM users u
              LEFT JOIN badges b ON u.repped_badge_id = b.id
