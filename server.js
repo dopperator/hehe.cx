@@ -1854,6 +1854,112 @@ app.delete('/api/admin/users/:userId/links/:linkId', requireAdmin, async (req, r
     }
 });
 
+// Add new link for user
+app.post('/api/admin/users/:userId/links', requireAdmin, async (req, res) => {
+    try {
+        const { platform, url } = req.body;
+        if (!platform || !url) {
+            return res.status(400).json({ error: 'Platform and URL are required' });
+        }
+        
+        const maxOrder = await queryOne('SELECT MAX(display_order) as max_order FROM links WHERE user_id = ?', [req.params.userId]);
+        const displayOrder = (maxOrder?.max_order || 0) + 1;
+        
+        await insertAndReturn('links', {
+            user_id: parseInt(req.params.userId),
+            platform,
+            url,
+            display_order: displayOrder,
+            is_active: USE_POSTGRES ? true : 1
+        });
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Add link error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Set user's avatar URL
+app.put('/api/admin/users/:id/avatar', requireAdmin, async (req, res) => {
+    try {
+        const { avatar_url } = req.body;
+        await query('UPDATE users SET avatar = ? WHERE id = ?', [avatar_url || null, req.params.id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Set avatar error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Set user's background
+app.put('/api/admin/users/:id/background', requireAdmin, async (req, res) => {
+    try {
+        const { background_url, background_type, gradient_start, gradient_end, background_video } = req.body;
+        
+        const updates = [];
+        const values = [];
+        
+        if (background_type !== undefined) {
+            updates.push('background_type = ?');
+            values.push(background_type);
+        }
+        if (background_url !== undefined) {
+            updates.push('background = ?');
+            values.push(background_url || null);
+        }
+        if (gradient_start !== undefined) {
+            updates.push('gradient_start = ?');
+            values.push(gradient_start);
+        }
+        if (gradient_end !== undefined) {
+            updates.push('gradient_end = ?');
+            values.push(gradient_end);
+        }
+        if (background_video !== undefined) {
+            updates.push('background_video = ?');
+            values.push(background_video || null);
+        }
+        
+        if (updates.length > 0) {
+            values.push(req.params.id);
+            await query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
+        }
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Set background error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Set user's music settings
+app.put('/api/admin/users/:id/music', requireAdmin, async (req, res) => {
+    try {
+        const { music_type, music_url, music_start, music_end, prefer_music_over_video } = req.body;
+        
+        await query(`UPDATE users SET 
+            music_type = ?, 
+            music_url = ?, 
+            music_start = ?, 
+            music_end = ?, 
+            prefer_music_over_video = ? 
+            WHERE id = ?`, [
+            music_type || 'none',
+            music_url || null,
+            music_start || 0,
+            music_end || 0,
+            USE_POSTGRES ? (prefer_music_over_video || false) : (prefer_music_over_video ? 1 : 0),
+            req.params.id
+        ]);
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Set music error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Deactivate account
 app.post('/api/admin/users/:id/deactivate', requireAdmin, async (req, res) => {
     try {

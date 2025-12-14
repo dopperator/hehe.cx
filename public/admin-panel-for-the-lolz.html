@@ -961,6 +961,25 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="addLinkModal">
+        <div class="modal">
+            <h3>Add Link</h3>
+            <div class="form-group">
+                <label>Platform</label>
+                <input type="text" id="addLinkPlatform" placeholder="e.g., instagram, youtube, discord">
+            </div>
+            <div class="form-group">
+                <label>URL</label>
+                <input type="text" id="addLinkUrl" placeholder="https://...">
+            </div>
+            <input type="hidden" id="addLinkUserId">
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeAddLinkModal()">Cancel</button>
+                <button class="btn btn-purple" onclick="addLink()">Add Link</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentAdminId = null;
         let currentUser = null;
@@ -1281,10 +1300,92 @@
                         <textarea id="editBio">${user.bio || ''}</textarea>
                         <button class="btn btn-purple btn-sm" style="margin-top: 8px;" onclick="saveBio()">Save Bio</button>
                     </div>
-                    <div class="action-buttons" style="margin-top: 16px;">
-                        <button class="btn btn-ghost btn-sm" onclick="removeAvatar(${user.id})" ${!user.avatar ? 'disabled' : ''}>Remove Avatar</button>
-                        <button class="btn btn-ghost btn-sm" onclick="removeBackground(${user.id})" ${!user.background ? 'disabled' : ''}>Remove Background</button>
+                    <div class="form-group">
+                        <label>Avatar URL</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="editAvatarUrl" value="${user.avatar || ''}" placeholder="https://..." style="flex: 1;">
+                            <button class="btn btn-purple btn-sm" onclick="saveAvatarUrl()">Save</button>
+                            <button class="btn btn-ghost btn-sm" onclick="removeAvatar(${user.id})" ${!user.avatar ? 'disabled' : ''}>Remove</button>
+                        </div>
                     </div>
+                </div>
+
+                <div class="section">
+                    <h3>Background Settings</h3>
+                    <div class="form-group">
+                        <label>Background Type</label>
+                        <select id="editBackgroundType" onchange="toggleBackgroundFields()">
+                            <option value="gradient" ${user.background_type === 'gradient' ? 'selected' : ''}>Gradient</option>
+                            <option value="image" ${user.background_type === 'image' ? 'selected' : ''}>Image</option>
+                            <option value="video" ${user.background_type === 'video' ? 'selected' : ''}>Video</option>
+                        </select>
+                    </div>
+                    <div id="gradientFields" style="display: ${user.background_type === 'gradient' ? 'block' : 'none'};">
+                        <div class="form-group">
+                            <label>Gradient Colors</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="color" id="editGradientStart" value="${user.gradient_start || '#667eea'}" style="width: 60px; height: 36px;">
+                                <span>→</span>
+                                <input type="color" id="editGradientEnd" value="${user.gradient_end || '#764ba2'}" style="width: 60px; height: 36px;">
+                                <button class="btn btn-purple btn-sm" onclick="saveGradient()">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="imageFields" style="display: ${user.background_type === 'image' ? 'block' : 'none'};">
+                        <div class="form-group">
+                            <label>Background Image URL</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="editBackgroundUrl" value="${user.background || ''}" placeholder="https://..." style="flex: 1;">
+                                <button class="btn btn-purple btn-sm" onclick="saveBackgroundUrl()">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="videoFields" style="display: ${user.background_type === 'video' ? 'block' : 'none'};">
+                        <div class="form-group">
+                            <label>Background Video URL</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="editVideoUrl" value="${user.background_video || ''}" placeholder="https://..." style="flex: 1;">
+                                <button class="btn btn-purple btn-sm" onclick="saveVideoUrl()">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="action-buttons" style="margin-top: 16px;">
+                        <button class="btn btn-ghost btn-sm" onclick="removeBackground(${user.id})" ${!user.background && !user.background_video ? 'disabled' : ''}>Remove Background</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>Music Settings</h3>
+                    <div class="form-group">
+                        <label>Music Source</label>
+                        <select id="editMusicType">
+                            <option value="none" ${user.music_type === 'none' ? 'selected' : ''}>None</option>
+                            <option value="youtube" ${user.music_type === 'youtube' ? 'selected' : ''}>YouTube</option>
+                            <option value="spotify" ${user.music_type === 'spotify' ? 'selected' : ''}>Spotify</option>
+                            <option value="soundcloud" ${user.music_type === 'soundcloud' ? 'selected' : ''}>SoundCloud</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Music URL</label>
+                        <input type="text" id="editMusicUrl" value="${user.music_url || ''}" placeholder="https://...">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Start (seconds)</label>
+                            <input type="number" id="editMusicStart" value="${user.music_start || 0}" min="0">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>End (seconds)</label>
+                            <input type="number" id="editMusicEnd" value="${user.music_end || 0}" min="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="editPreferMusic" ${user.prefer_music_over_video ? 'checked' : ''} style="width: auto;">
+                            Prefer music over video audio
+                        </label>
+                    </div>
+                    <button class="btn btn-purple btn-sm" onclick="saveMusicSettings()">Save Music Settings</button>
                 </div>
 
                 <div class="section">
@@ -1299,7 +1400,8 @@
                                 </div>
                             `).join('')}
                         </div>
-                    ` : '<p style="color: var(--text-muted);">No connections</p>'}
+                    ` : '<p style="color: var(--text-muted); margin-bottom: 16px;">No connections</p>'}
+                    <button class="btn btn-purple btn-sm" style="margin-top: 12px;" onclick="showAddLinkModal(${user.id})">+ Add Link</button>
                 </div>
 
                 <div class="section">
@@ -1383,6 +1485,116 @@
         async function removeBackground(userId) {
             await fetch(`/api/admin/users/${userId}/background`, { method: 'DELETE' });
             loadUser(userId);
+        }
+
+        async function saveAvatarUrl() {
+            const avatarUrl = document.getElementById('editAvatarUrl').value;
+            await fetch(`/api/admin/users/${currentUser.user.id}/avatar`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ avatar_url: avatarUrl })
+            });
+            loadUser(currentUser.user.id);
+        }
+
+        function toggleBackgroundFields() {
+            const type = document.getElementById('editBackgroundType').value;
+            document.getElementById('gradientFields').style.display = type === 'gradient' ? 'block' : 'none';
+            document.getElementById('imageFields').style.display = type === 'image' ? 'block' : 'none';
+            document.getElementById('videoFields').style.display = type === 'video' ? 'block' : 'none';
+        }
+
+        async function saveGradient() {
+            const gradientStart = document.getElementById('editGradientStart').value;
+            const gradientEnd = document.getElementById('editGradientEnd').value;
+            await fetch(`/api/admin/users/${currentUser.user.id}/background`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    background_type: 'gradient',
+                    gradient_start: gradientStart, 
+                    gradient_end: gradientEnd 
+                })
+            });
+            loadUser(currentUser.user.id);
+        }
+
+        async function saveBackgroundUrl() {
+            const backgroundUrl = document.getElementById('editBackgroundUrl').value;
+            await fetch(`/api/admin/users/${currentUser.user.id}/background`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    background_type: 'image',
+                    background_url: backgroundUrl 
+                })
+            });
+            loadUser(currentUser.user.id);
+        }
+
+        async function saveVideoUrl() {
+            const videoUrl = document.getElementById('editVideoUrl').value;
+            await fetch(`/api/admin/users/${currentUser.user.id}/background`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    background_type: 'video',
+                    background_video: videoUrl 
+                })
+            });
+            loadUser(currentUser.user.id);
+        }
+
+        async function saveMusicSettings() {
+            const musicType = document.getElementById('editMusicType').value;
+            const musicUrl = document.getElementById('editMusicUrl').value;
+            const musicStart = parseInt(document.getElementById('editMusicStart').value) || 0;
+            const musicEnd = parseInt(document.getElementById('editMusicEnd').value) || 0;
+            const preferMusic = document.getElementById('editPreferMusic').checked;
+            
+            await fetch(`/api/admin/users/${currentUser.user.id}/music`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    music_type: musicType,
+                    music_url: musicUrl,
+                    music_start: musicStart,
+                    music_end: musicEnd,
+                    prefer_music_over_video: preferMusic
+                })
+            });
+            loadUser(currentUser.user.id);
+        }
+
+        function showAddLinkModal(userId) {
+            document.getElementById('addLinkUserId').value = userId;
+            document.getElementById('addLinkPlatform').value = '';
+            document.getElementById('addLinkUrl').value = '';
+            document.getElementById('addLinkModal').classList.add('active');
+        }
+
+        function closeAddLinkModal() {
+            document.getElementById('addLinkModal').classList.remove('active');
+        }
+
+        async function addLink() {
+            const userId = document.getElementById('addLinkUserId').value;
+            const platform = document.getElementById('addLinkPlatform').value;
+            const url = document.getElementById('addLinkUrl').value;
+            
+            if (!platform || !url) {
+                alert('Platform and URL are required');
+                return;
+            }
+            
+            await fetch(`/api/admin/users/${userId}/links`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ platform, url })
+            });
+            
+            closeAddLinkModal();
+            loadUser(parseInt(userId));
         }
 
         async function grantPremium(userId) {
