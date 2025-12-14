@@ -451,6 +451,23 @@
             margin-bottom: 20px;
         }
 
+        .bg-options:has(.bg-option.premium-only:not([style*="display: none"])) {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .bg-option.premium-only {
+            border-color: rgba(139, 92, 246, 0.3);
+            position: relative;
+        }
+
+        .bg-option.premium-only::after {
+            content: '⭐';
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            font-size: 0.7rem;
+        }
+
         .bg-option {
             padding: 16px;
             border: 2px solid var(--border);
@@ -1164,6 +1181,10 @@
                             <div class="bg-option-icon">🖼️</div>
                             <div class="bg-option-label">Image</div>
                         </div>
+                        <div class="bg-option premium-only" data-type="video" id="videoOption" style="display: none;">
+                            <div class="bg-option-icon">🎬</div>
+                            <div class="bg-option-label">Video</div>
+                        </div>
                     </div>
 
                     <div class="gradient-picker active" id="gradientPicker">
@@ -1184,6 +1205,37 @@
                         </p>
                         <input type="file" id="bgInput" class="file-input" accept=".png,.jpg,.jpeg">
                         <button class="btn btn-ghost" onclick="document.getElementById('bgInput').click()">Upload Background</button>
+                    </div>
+
+                    <div id="bgVideoUpload" style="display: none;">
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
+                            Upload a video background. MP4 only, max 15 seconds, max 50MB.
+                        </p>
+                        <input type="file" id="videoInput" class="file-input" accept=".mp4,video/mp4">
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <button class="btn btn-ghost" onclick="document.getElementById('videoInput').click()">Upload Video</button>
+                            <button class="btn btn-danger" id="removeVideoBtn" style="display: none;" onclick="removeVideo()">Remove Video</button>
+                        </div>
+                        <div id="currentVideoPreview" style="display: none; margin-top: 16px;">
+                            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 8px;">Current video:</p>
+                            <video id="videoPreviewThumb" style="width: 100%; max-width: 200px; border-radius: 8px;" muted loop></video>
+                        </div>
+                        
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+                            <div class="toggle-group" style="margin-bottom: 0;">
+                                <div class="toggle-info">
+                                    <h4>Audio Default</h4>
+                                    <p>When someone visits your profile, should the video audio be on or off by default?</p>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="videoAudioDefault">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 8px;">
+                                <span id="audioDefaultLabel">Audio OFF by default</span> - Visitors can still toggle it with the volume button
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -1429,6 +1481,29 @@
                     </svg>
                     Premium
                 `;
+                
+                // Show video background option for premium users
+                document.getElementById('videoOption').style.display = 'block';
+                
+                // Set video audio default
+                document.getElementById('videoAudioDefault').checked = currentUser.video_audio_default;
+                updateAudioDefaultLabel();
+                
+                // If user has a video background, show it
+                if (currentUser.background_video) {
+                    document.getElementById('removeVideoBtn').style.display = 'inline-flex';
+                    document.getElementById('currentVideoPreview').style.display = 'block';
+                    document.getElementById('videoPreviewThumb').src = getImageUrl(currentUser.background_video);
+                    document.getElementById('videoPreviewThumb').play();
+                }
+            }
+            
+            // Set correct background type active state
+            if (currentUser.background_type === 'video') {
+                document.querySelector('.bg-option[data-type="gradient"]').classList.remove('active');
+                document.querySelector('.bg-option[data-type="video"]').classList.add('active');
+                document.getElementById('gradientPicker').classList.remove('active');
+                document.getElementById('bgVideoUpload').style.display = 'block';
             }
 
             updatePreview();
@@ -1461,11 +1536,29 @@
             const previewBg = document.getElementById('previewBg');
             const bgType = document.querySelector('.bg-option.active').dataset.type;
             
+            // Remove any existing video element
+            const existingVideo = previewBg.querySelector('video');
+            if (existingVideo) existingVideo.remove();
+            
             if (bgType === 'gradient') {
                 previewBg.style.backgroundImage = 'none';
                 previewBg.style.background = `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})`;
                 previewBg.classList.remove('image');
-            } else if (currentUser.background) {
+            } else if (bgType === 'video' && currentUser.background_video) {
+                previewBg.style.background = '#000';
+                previewBg.style.backgroundImage = 'none';
+                previewBg.classList.remove('image');
+                
+                // Add video element
+                const videoEl = document.createElement('video');
+                videoEl.src = getImageUrl(currentUser.background_video);
+                videoEl.autoplay = true;
+                videoEl.loop = true;
+                videoEl.muted = true;
+                videoEl.playsInline = true;
+                videoEl.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;';
+                previewBg.appendChild(videoEl);
+            } else if (bgType === 'image' && currentUser.background) {
                 previewBg.style.background = 'none';
                 previewBg.style.backgroundImage = `url(${getImageUrl(currentUser.background)})`;
                 previewBg.style.backgroundSize = 'cover';
@@ -1554,6 +1647,7 @@
                 const type = option.dataset.type;
                 document.getElementById('gradientPicker').classList.toggle('active', type === 'gradient');
                 document.getElementById('bgImageUpload').style.display = type === 'image' ? 'block' : 'none';
+                document.getElementById('bgVideoUpload').style.display = type === 'video' ? 'block' : 'none';
                 
                 updatePreview();
             });
@@ -1632,6 +1726,107 @@
                 showToast('Upload failed', 'error');
             }
         });
+
+        // Video upload handler
+        document.getElementById('videoInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Client-side validation
+            if (file.size > 50 * 1024 * 1024) {
+                showToast('Video must be under 50MB', 'error');
+                return;
+            }
+
+            // Check video duration
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            
+            video.onloadedmetadata = async function() {
+                window.URL.revokeObjectURL(video.src);
+                
+                if (video.duration > 15) {
+                    showToast('Video must be 15 seconds or less', 'error');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('video', file);
+
+                try {
+                    showToast('Uploading video...', 'success');
+                    
+                    const res = await fetch('/api/profile/video', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await res.json();
+
+                    if (data.success) {
+                        currentUser.background_video = data.background_video;
+                        currentUser.background_type = 'video';
+                        
+                        // Show video preview
+                        document.getElementById('removeVideoBtn').style.display = 'inline-flex';
+                        document.getElementById('currentVideoPreview').style.display = 'block';
+                        document.getElementById('videoPreviewThumb').src = getImageUrl(data.background_video);
+                        document.getElementById('videoPreviewThumb').play();
+                        
+                        updatePreview();
+                        showToast('Video uploaded!', 'success');
+                    } else {
+                        showToast(data.error || 'Upload failed', 'error');
+                    }
+                } catch (error) {
+                    showToast('Upload failed', 'error');
+                }
+            };
+
+            video.src = URL.createObjectURL(file);
+        });
+
+        // Audio default toggle handler
+        document.getElementById('videoAudioDefault').addEventListener('change', function() {
+            updateAudioDefaultLabel();
+        });
+
+        function updateAudioDefaultLabel() {
+            const isOn = document.getElementById('videoAudioDefault').checked;
+            document.getElementById('audioDefaultLabel').textContent = isOn ? 'Audio ON by default' : 'Audio OFF by default';
+        }
+
+        async function removeVideo() {
+            if (!confirm('Remove your video background?')) return;
+
+            try {
+                const res = await fetch('/api/profile/video', { method: 'DELETE' });
+                const data = await res.json();
+
+                if (data.success) {
+                    currentUser.background_video = null;
+                    currentUser.background_type = 'gradient';
+                    
+                    // Hide video preview
+                    document.getElementById('removeVideoBtn').style.display = 'none';
+                    document.getElementById('currentVideoPreview').style.display = 'none';
+                    document.getElementById('videoPreviewThumb').src = '';
+                    
+                    // Switch to gradient
+                    document.querySelectorAll('.bg-option').forEach(o => o.classList.remove('active'));
+                    document.querySelector('.bg-option[data-type="gradient"]').classList.add('active');
+                    document.getElementById('gradientPicker').classList.add('active');
+                    document.getElementById('bgVideoUpload').style.display = 'none';
+                    
+                    updatePreview();
+                    showToast('Video removed', 'success');
+                } else {
+                    showToast(data.error || 'Failed to remove video', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to remove video', 'error');
+            }
+        }
 
         // Link functions
         function toggleAddLink() {
@@ -1730,7 +1925,8 @@
                         show_userid: document.getElementById('showUserId').checked,
                         background_type: bgType,
                         gradient_start: document.getElementById('gradientStart').value,
-                        gradient_end: document.getElementById('gradientEnd').value
+                        gradient_end: document.getElementById('gradientEnd').value,
+                        video_audio_default: document.getElementById('videoAudioDefault').checked
                     })
                 });
 

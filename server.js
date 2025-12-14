@@ -58,7 +58,7 @@ if (USE_SUPABASE_STORAGE) {
 
 // Ensure upload directories exist (for local development)
 if (!USE_SUPABASE_STORAGE) {
-    const uploadDirs = ['uploads/avatars', 'uploads/backgrounds'];
+    const uploadDirs = ['uploads/avatars', 'uploads/backgrounds', 'uploads/videos'];
     uploadDirs.forEach(dir => {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
@@ -99,6 +99,8 @@ async function initDatabase() {
                     signup_ip VARCHAR(45),
                     is_deactivated BOOLEAN DEFAULT false,
                     deactivation_reason TEXT,
+                    background_video VARCHAR(500),
+                    video_audio_default BOOLEAN DEFAULT false,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
 
@@ -161,6 +163,8 @@ async function initDatabase() {
                 await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS signup_ip VARCHAR(45)`);
                 await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_deactivated BOOLEAN DEFAULT false`);
                 await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS deactivation_reason TEXT`);
+                await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS background_video VARCHAR(500)`);
+                await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS video_audio_default BOOLEAN DEFAULT false`);
             } catch (e) {
                 // Columns may already exist
             }
@@ -198,6 +202,8 @@ async function initDatabase() {
                     signup_ip TEXT,
                     is_deactivated INTEGER DEFAULT 0,
                     deactivation_reason TEXT,
+                    background_video TEXT,
+                    video_audio_default INTEGER DEFAULT 0,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 );
 
@@ -256,7 +262,9 @@ async function initDatabase() {
                 'ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0',
                 'ALTER TABLE users ADD COLUMN signup_ip TEXT',
                 'ALTER TABLE users ADD COLUMN is_deactivated INTEGER DEFAULT 0',
-                'ALTER TABLE users ADD COLUMN deactivation_reason TEXT'
+                'ALTER TABLE users ADD COLUMN deactivation_reason TEXT',
+                'ALTER TABLE users ADD COLUMN background_video TEXT',
+                'ALTER TABLE users ADD COLUMN video_audio_default INTEGER DEFAULT 0'
             ];
             
             for (const migration of migrations) {
@@ -363,7 +371,9 @@ const storage = USE_SUPABASE_STORAGE
     ? multer.memoryStorage()
     : multer.diskStorage({
         destination: (req, file, cb) => {
-            const folder = file.fieldname === 'avatar' ? 'uploads/avatars' : 'uploads/backgrounds';
+            let folder = 'uploads/backgrounds';
+            if (file.fieldname === 'avatar') folder = 'uploads/avatars';
+            else if (file.fieldname === 'video') folder = 'uploads/videos';
             cb(null, folder);
         },
         filename: (req, file, cb) => {
@@ -378,7 +388,8 @@ const fileFilter = (req, file, cb) => {
     
     const allowedTypes = {
         avatar: isPremium ? ['image/png', 'image/gif'] : ['image/png'],
-        background: isPremium ? ['image/png', 'image/jpeg', 'image/gif'] : ['image/png', 'image/jpeg']
+        background: isPremium ? ['image/png', 'image/jpeg', 'image/gif'] : ['image/png', 'image/jpeg'],
+        video: isPremium ? ['video/mp4'] : []
     };
     
     const fieldAllowed = allowedTypes[file.fieldname] || [];
@@ -386,7 +397,11 @@ const fileFilter = (req, file, cb) => {
     if (fieldAllowed.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error(`Invalid file type. Allowed: ${fieldAllowed.join(', ')}`), false);
+        if (file.fieldname === 'video' && !isPremium) {
+            cb(new Error('Video backgrounds are a premium feature'), false);
+        } else {
+            cb(new Error(`Invalid file type. Allowed: ${fieldAllowed.join(', ')}`), false);
+        }
     }
 };
 
@@ -592,7 +607,8 @@ app.get('/api/auth/status', async (req, res) => {
         if (req.session.user) {
             const user = await queryOne(
                 `SELECT id, email, username, display_name, bio, avatar, background, 
-                        background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding 
+                        background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding,
+                        background_video, video_audio_default 
                  FROM users WHERE id = ?`,
                 [req.session.user.id]
             );
@@ -854,8 +870,9 @@ app.post('/api/auth/logout', (req, res) => {
 // Update profile
 app.put('/api/profile', requireAuth, async (req, res) => {
     try {
-        const { display_name, bio, background_type, gradient_start, gradient_end, show_userid } = req.body;
+        const { display_name, bio, background_type, gradient_start, gradient_end, show_userid, video_audio_default } = req.body;
         const showUseridValue = USE_POSTGRES ? show_userid : (show_userid ? 1 : 0);
+        const videoAudioValue = USE_POSTGRES ? video_audio_default : (video_audio_default ? 1 : 0);
         
         await query(
             `UPDATE users SET 
@@ -864,14 +881,16 @@ app.put('/api/profile', requireAuth, async (req, res) => {
                 background_type = COALESCE(?, background_type),
                 gradient_start = COALESCE(?, gradient_start),
                 gradient_end = COALESCE(?, gradient_end),
-                show_userid = COALESCE(?, show_userid)
+                show_userid = COALESCE(?, show_userid),
+                video_audio_default = COALESCE(?, video_audio_default)
             WHERE id = ?`,
-            [display_name, bio, background_type, gradient_start, gradient_end, showUseridValue, req.session.user.id]
+            [display_name, bio, background_type, gradient_start, gradient_end, showUseridValue, videoAudioValue, req.session.user.id]
         );
         
         const user = await queryOne(
             `SELECT id, email, username, display_name, bio, avatar, background, 
-                    background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding 
+                    background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding,
+                    background_video, video_audio_default 
              FROM users WHERE id = ?`,
             [req.session.user.id]
         );
@@ -956,6 +975,84 @@ app.post('/api/profile/background', requireAuth, checkFileSize('background'), as
         res.json({ success: true, background: backgroundUrl });
     } catch (error) {
         console.error('Background upload error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Upload video background (Premium only)
+app.post('/api/profile/video', requireAuth, checkFileSize('video'), async (req, res) => {
+    try {
+        // Check if user is premium
+        const user = await queryOne('SELECT is_premium, background_video FROM users WHERE id = ?', [req.session.user.id]);
+        
+        if (!user?.is_premium) {
+            return res.status(403).json({ error: 'Video backgrounds are a premium feature' });
+        }
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+        
+        // Check file size (50MB max for videos)
+        if (req.file.size > 50 * 1024 * 1024) {
+            if (!USE_SUPABASE_STORAGE && req.file.path) {
+                fs.unlinkSync(req.file.path);
+            }
+            return res.status(400).json({ error: 'Video must be under 50MB' });
+        }
+        
+        let videoUrl;
+        
+        if (USE_SUPABASE_STORAGE) {
+            // Delete old video from Supabase
+            if (user?.background_video) {
+                await deleteFromSupabase('videos', user.background_video);
+            }
+            
+            // Upload to Supabase Storage
+            const fileName = `${req.session.user.id}/${uuidv4()}${path.extname(req.file.originalname)}`;
+            videoUrl = await uploadToSupabase('videos', fileName, req.file.buffer, req.file.mimetype);
+        } else {
+            // Local storage
+            if (user?.background_video && fs.existsSync(user.background_video)) {
+                fs.unlinkSync(user.background_video);
+            }
+            videoUrl = req.file.path.replace(/\\/g, '/');
+        }
+        
+        await query(
+            'UPDATE users SET background_video = ?, background_type = ? WHERE id = ?',
+            [videoUrl, 'video', req.session.user.id]
+        );
+        
+        res.json({ success: true, background_video: videoUrl });
+    } catch (error) {
+        console.error('Video upload error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Delete video background
+app.delete('/api/profile/video', requireAuth, async (req, res) => {
+    try {
+        const user = await queryOne('SELECT background_video FROM users WHERE id = ?', [req.session.user.id]);
+        
+        if (user?.background_video) {
+            if (USE_SUPABASE_STORAGE) {
+                await deleteFromSupabase('videos', user.background_video);
+            } else if (fs.existsSync(user.background_video)) {
+                fs.unlinkSync(user.background_video);
+            }
+        }
+        
+        await query(
+            'UPDATE users SET background_video = NULL, background_type = ? WHERE id = ?',
+            ['gradient', req.session.user.id]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete video error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });
@@ -1611,7 +1708,8 @@ app.get('/api/profile/:username', async (req, res) => {
     try {
         const user = await queryOne(
             `SELECT id, username, display_name, bio, avatar, background, 
-                    background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding 
+                    background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding,
+                    background_video, video_audio_default 
              FROM users WHERE username = ?`,
             [req.params.username.toLowerCase()]
         );

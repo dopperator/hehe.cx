@@ -114,6 +114,10 @@
             gap: 6px;
         }
 
+        .user-badges:empty {
+            display: none;
+        }
+
         .user-badge {
             width: 28px;
             height: 28px;
@@ -425,10 +429,74 @@
         .share-btn.copied .share-tooltip {
             opacity: 1;
         }
+
+        /* Video Background */
+        .page-bg video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 0;
+        }
+
+        /* Volume Toggle Button */
+        .volume-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .volume-btn.visible {
+            display: flex;
+        }
+
+        .volume-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+
+        .volume-btn.muted svg.volume-on,
+        .volume-btn:not(.muted) svg.volume-off {
+            display: none;
+        }
+
+        .volume-btn.muted svg.volume-off,
+        .volume-btn:not(.muted) svg.volume-on {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div class="page-bg" id="pageBg"></div>
+
+    <!-- Volume toggle for video backgrounds -->
+    <button class="volume-btn muted" id="volumeBtn" onclick="toggleVolume()" title="Toggle audio">
+        <svg class="volume-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        </svg>
+        <svg class="volume-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <line x1="23" y1="9" x2="17" y2="15"/>
+            <line x1="17" y1="9" x2="23" y2="15"/>
+        </svg>
+    </button>
 
     <div class="loading" id="loading">
         <div class="loading-spinner"></div>
@@ -506,6 +574,8 @@
             return path.startsWith('/') ? path : '/' + path;
         }
 
+        let bgVideo = null;
+
         async function loadProfile() {
             const username = window.location.pathname.slice(1);
             
@@ -525,7 +595,25 @@
 
                 // Background
                 const pageBg = document.getElementById('pageBg');
-                if (user.background_type === 'image' && user.background) {
+                if (user.background_type === 'video' && user.background_video) {
+                    // Video background
+                    bgVideo = document.createElement('video');
+                    bgVideo.src = getImageUrl(user.background_video);
+                    bgVideo.autoplay = true;
+                    bgVideo.loop = true;
+                    bgVideo.playsInline = true;
+                    bgVideo.muted = !user.video_audio_default; // Respect the owner's default setting
+                    pageBg.appendChild(bgVideo);
+                    
+                    // Show volume button
+                    const volumeBtn = document.getElementById('volumeBtn');
+                    volumeBtn.classList.add('visible');
+                    if (user.video_audio_default) {
+                        volumeBtn.classList.remove('muted');
+                    } else {
+                        volumeBtn.classList.add('muted');
+                    }
+                } else if (user.background_type === 'image' && user.background) {
                     pageBg.style.backgroundImage = `url(${getImageUrl(user.background)})`;
                     pageBg.classList.add('image');
                 } else {
@@ -621,6 +709,20 @@
                     btn.classList.add('copied');
                     setTimeout(() => btn.classList.remove('copied'), 2000);
                 });
+            }
+        }
+
+        function toggleVolume() {
+            if (!bgVideo) return;
+            
+            const volumeBtn = document.getElementById('volumeBtn');
+            
+            if (bgVideo.muted) {
+                bgVideo.muted = false;
+                volumeBtn.classList.remove('muted');
+            } else {
+                bgVideo.muted = true;
+                volumeBtn.classList.add('muted');
             }
         }
 
