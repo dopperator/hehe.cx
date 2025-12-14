@@ -16,10 +16,9 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           timeout: 60s
-          debug: true
           script: |
             cd ~/hehe.cx
             git pull origin main
-            npm install --production
+            npm install --omit=dev
             pm2 restart hehe.cx
 
