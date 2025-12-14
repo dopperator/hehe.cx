@@ -2085,6 +2085,10 @@ app.get('/api/profile/:username', async (req, res) => {
 // ============ PAGE ROUTES ============
 
 app.get('/maintenance', (req, res) => {
+    // Redirect to home if maintenance mode is off
+    if (!maintenanceMode) {
+        return res.redirect('/');
+    }
     res.sendFile(path.join(__dirname, 'public', 'maintenance.html'));
 });
 
