@@ -407,11 +407,12 @@ const checkMaintenance = (req, res, next) => {
         return next();
     }
 
-    // Block everything else during maintenance
+    // Block API routes during maintenance
     if (req.path.startsWith('/api/')) {
         return res.status(503).json({ error: 'Site is under maintenance', maintenance: true });
     }
 
+    // For all other requests (HTML pages), redirect to maintenance
     return res.redirect('/maintenance');
 };
 
@@ -419,7 +420,8 @@ const checkMaintenance = (req, res, next) => {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
+
+// Static assets that should always be accessible
 app.use('/uploads', express.static('uploads'));
 app.use('/src', express.static('src'));
 
@@ -441,6 +443,9 @@ if (process.env.NODE_ENV === 'production') {
 
 // Apply maintenance check after session middleware
 app.use(checkMaintenance);
+
+// Serve static files AFTER maintenance check (so HTML pages get blocked during maintenance)
+app.use(express.static('public'));
 
 // File upload configuration
 // Use memory storage for Supabase, disk storage for local
@@ -582,25 +587,27 @@ async function sendVerificationEmail(email, code) {
         to: email,
         subject: 'Verify your hehe.cx account',
         html: `
-            <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #8b5cf6; margin: 0; font-size: 28px;">hehe.cx</h1>
-                </div>
-                <div style="background: linear-gradient(135deg, #18181b 0%, #0f0f12 100%); border-radius: 16px; padding: 32px; border: 1px solid rgba(255,255,255,0.1);">
-                    <h2 style="color: #f5f5f7; margin: 0 0 16px 0; font-size: 22px;">Verify your email</h2>
-                    <p style="color: #a1a1aa; margin: 0 0 24px 0; font-size: 15px; line-height: 1.6;">
-                        Enter this code to complete your registration. It expires in 5 minutes.
-                    </p>
-                    <div style="background: rgba(139, 92, 246, 0.1); border: 2px solid #8b5cf6; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
-                        <span style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; color: #f5f5f7; letter-spacing: 8px;">${code}</span>
+            <div style="background-color: #0a0a0f; padding: 40px 20px; min-height: 100%;">
+                <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #8b5cf6; margin: 0; font-size: 28px;">hehe.cx</h1>
                     </div>
-                    <p style="color: #71717a; margin: 0; font-size: 13px;">
-                        If you didn't request this code, you can safely ignore this email.
+                    <div style="background-color: #18181b; border-radius: 16px; padding: 32px; border: 1px solid #2a2a2f;">
+                        <h2 style="color: #f5f5f7; margin: 0 0 16px 0; font-size: 22px;">Verify your email</h2>
+                        <p style="color: #a1a1aa; margin: 0 0 24px 0; font-size: 15px; line-height: 1.6;">
+                            Enter this code to complete your registration. It expires in 5 minutes.
+                        </p>
+                        <div style="background-color: #1a1a2e; border: 2px solid #8b5cf6; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
+                            <span style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; color: #ffffff; letter-spacing: 8px;">${code}</span>
+                        </div>
+                        <p style="color: #71717a; margin: 0; font-size: 13px;">
+                            If you didn't request this code, you can safely ignore this email.
+                        </p>
+                    </div>
+                    <p style="color: #71717a; font-size: 12px; text-align: center; margin-top: 24px;">
+                        © 2025 hehe.cx - Your Digital Identity
                     </p>
                 </div>
-                <p style="color: #52525b; font-size: 12px; text-align: center; margin-top: 24px;">
-                    © 2025 hehe.cx - Your Digital Identity
-                </p>
             </div>
         `
     };
@@ -651,21 +658,23 @@ async function sendAdminVerificationEmail(email, code) {
         to: email,
         subject: '🔐 Admin Panel Login Verification',
         html: `
-            <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #ef4444; margin: 0; font-size: 28px;">🔐 hehe.cx Admin</h1>
-                </div>
-                <div style="background: linear-gradient(135deg, #1a1a1f 0%, #0f0f12 100%); border-radius: 16px; padding: 32px; border: 2px solid #ef4444;">
-                    <h2 style="color: #f5f5f7; margin: 0 0 16px 0; font-size: 22px;">Admin Login Verification</h2>
-                    <p style="color: #a1a1aa; margin: 0 0 24px 0; font-size: 15px; line-height: 1.6;">
-                        Someone is trying to access the admin panel. If this is you, enter this code. It expires in 5 minutes.
-                    </p>
-                    <div style="background: rgba(239, 68, 68, 0.1); border: 2px solid #ef4444; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
-                        <span style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; color: #f5f5f7; letter-spacing: 8px;">${code}</span>
+            <div style="background-color: #0a0a0f; padding: 40px 20px; min-height: 100%;">
+                <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #ef4444; margin: 0; font-size: 28px;">🔐 hehe.cx Admin</h1>
                     </div>
-                    <p style="color: #ef4444; margin: 0; font-size: 13px; font-weight: bold;">
-                        ⚠️ If you didn't request this, someone may be trying to access your admin account!
-                    </p>
+                    <div style="background-color: #18181b; border-radius: 16px; padding: 32px; border: 2px solid #ef4444;">
+                        <h2 style="color: #f5f5f7; margin: 0 0 16px 0; font-size: 22px;">Admin Login Verification</h2>
+                        <p style="color: #a1a1aa; margin: 0 0 24px 0; font-size: 15px; line-height: 1.6;">
+                            Someone is trying to access the admin panel. If this is you, enter this code. It expires in 5 minutes.
+                        </p>
+                        <div style="background-color: #1a1a2e; border: 2px solid #ef4444; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
+                            <span style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; color: #ffffff; letter-spacing: 8px;">${code}</span>
+                        </div>
+                        <p style="color: #ef4444; margin: 0; font-size: 13px; font-weight: bold;">
+                            ⚠️ If you didn't request this, someone may be trying to access your admin account!
+                        </p>
+                    </div>
                 </div>
             </div>
         `
