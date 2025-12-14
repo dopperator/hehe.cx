@@ -661,7 +661,7 @@ async function sendAdminVerificationEmail(email, code) {
     const mailOptions = {
         from: `"hehe.cx Admin" <${EMAIL_USER}>`,
         to: email,
-        subject: '🔐 Admin Panel Login Verification',
+        subject: 'Admin Panel Login Verification',
         html: `
             <div style="background-color: #0a0a0f; padding: 40px 20px; min-height: 100%;">
                 <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 500px; margin: 0 auto;">
@@ -1574,8 +1574,12 @@ app.post('/api/admin/login', async (req, res) => {
         // Send verification email
         const emailSent = await sendAdminVerificationEmail(user.email, code);
         
+        // Always log the code for backup access (check PM2 logs)
+        console.log(`🔐 Admin verification code for ${user.email}: ${code}`);
+        
         if (!emailSent && emailTransporter) {
-            return res.status(500).json({ error: 'Failed to send verification email' });
+            // Don't block login if email fails - code is logged above
+            console.log('⚠️ Email send failed, but code is logged above');
         }
         
         res.json({ success: true, message: 'Verification code sent', adminId: user.id });
