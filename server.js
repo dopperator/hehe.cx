@@ -402,8 +402,13 @@ const checkMaintenance = (req, res, next) => {
         return next();
     }
 
-    // Admin session bypasses maintenance mode
+    // Admin session (from admin panel) bypasses maintenance mode
     if (req.session && req.session.admin) {
+        return next();
+    }
+
+    // Regular user session with admin privileges also bypasses maintenance mode
+    if (req.session && req.session.user && req.session.user.is_admin) {
         return next();
     }
 
@@ -775,9 +780,9 @@ app.post('/api/auth/signup', async (req, res) => {
         }
         
         // Reserved usernames that cannot be claimed
-        const reservedUsernames = ['admin', 'administrator', 'api', 'dashboard', 'help', 'premium', 'settings', 'login', 'logout', 'signup', 'register', 'profile', 'user', 'users', 'support', 'contact', 'about', 'terms', 'privacy', 'tos', 'null', 'undefined', 'root', 'system'];
+        const reservedUsernames = ['admin', 'administrator', 'api', 'dashboard', 'help', 'premium', 'settings', 'login', 'logout', 'signup', 'register', 'profile', 'user', 'users', 'support', 'contact', 'about', 'terms', 'privacy', 'tos', 'null', 'termsofservice', 'privacypolicy', 'undefined', 'hehecx', 'hehe', 'hehe.cx', 'root', 'system', 'maintenance'];
         if (reservedUsernames.includes(username.toLowerCase())) {
-            return res.status(400).json({ error: 'This username is reserved and cannot be used' });
+            return res.status(400).json({ error: 'This username cannot be used' });
         }
         
         if (password.length < 6) {
@@ -893,7 +898,7 @@ app.post('/api/auth/verify', async (req, res) => {
         await query('DELETE FROM pending_verifications WHERE email = ?', [email.toLowerCase()]);
         
         // Log the user in
-        req.session.user = { id: user.id, is_premium: user.is_premium };
+        req.session.user = { id: user.id, is_premium: user.is_premium, is_admin: user.is_admin };
         
         res.json({ success: true, user });
     } catch (error) {
@@ -979,7 +984,7 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
         
-        req.session.user = { id: user.id, is_premium: user.is_premium };
+        req.session.user = { id: user.id, is_premium: user.is_premium, is_admin: user.is_admin };
         
         res.json({ 
             success: true, 
