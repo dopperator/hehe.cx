@@ -101,6 +101,7 @@ async function initDatabase() {
                     deactivation_reason TEXT,
                     background_video VARCHAR(500),
                     video_audio_default BOOLEAN DEFAULT false,
+                    repped_badge_id INTEGER REFERENCES badges(id) ON DELETE SET NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
 
@@ -165,6 +166,7 @@ async function initDatabase() {
                 await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS deactivation_reason TEXT`);
                 await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS background_video VARCHAR(500)`);
                 await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS video_audio_default BOOLEAN DEFAULT false`);
+                await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS repped_badge_id INTEGER REFERENCES badges(id) ON DELETE SET NULL`);
             } catch (e) {
                 // Columns may already exist
             }
@@ -204,7 +206,9 @@ async function initDatabase() {
                     deactivation_reason TEXT,
                     background_video TEXT,
                     video_audio_default INTEGER DEFAULT 0,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    repped_badge_id INTEGER,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (repped_badge_id) REFERENCES badges(id) ON DELETE SET NULL
                 );
 
                 CREATE TABLE IF NOT EXISTS links (
@@ -264,7 +268,8 @@ async function initDatabase() {
                 'ALTER TABLE users ADD COLUMN is_deactivated INTEGER DEFAULT 0',
                 'ALTER TABLE users ADD COLUMN deactivation_reason TEXT',
                 'ALTER TABLE users ADD COLUMN background_video TEXT',
-                'ALTER TABLE users ADD COLUMN video_audio_default INTEGER DEFAULT 0'
+                'ALTER TABLE users ADD COLUMN video_audio_default INTEGER DEFAULT 0',
+                'ALTER TABLE users ADD COLUMN repped_badge_id INTEGER'
             ];
             
             for (const migration of migrations) {
@@ -608,7 +613,7 @@ app.get('/api/auth/status', async (req, res) => {
             const user = await queryOne(
                 `SELECT id, email, username, display_name, bio, avatar, background, 
                         background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding,
-                        background_video, video_audio_default 
+                        background_video, video_audio_default, repped_badge_id 
                  FROM users WHERE id = ?`,
                 [req.session.user.id]
             );
@@ -890,7 +895,7 @@ app.put('/api/profile', requireAuth, async (req, res) => {
         const user = await queryOne(
             `SELECT id, email, username, display_name, bio, avatar, background, 
                     background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding,
-                    background_video, video_audio_default 
+                    background_video, video_audio_default, repped_badge_id 
              FROM users WHERE id = ?`,
             [req.session.user.id]
         );
@@ -1053,6 +1058,54 @@ app.delete('/api/profile/video', requireAuth, async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         console.error('Delete video error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Get user's own badges
+app.get('/api/profile/badges', requireAuth, async (req, res) => {
+    try {
+        const badges = await query(`
+            SELECT b.id, b.name, b.image_url, b.description
+            FROM badges b
+            JOIN user_badges ub ON b.id = ub.badge_id
+            WHERE ub.user_id = ?
+            ORDER BY ub.granted_at ASC
+        `, [req.session.user.id]);
+        
+        res.json({ badges });
+    } catch (error) {
+        console.error('Get user badges error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Set repped badge
+app.put('/api/profile/repped-badge', requireAuth, async (req, res) => {
+    try {
+        const { badge_id } = req.body;
+        
+        // If badge_id is null, clear the repped badge
+        if (badge_id === null) {
+            await query('UPDATE users SET repped_badge_id = NULL WHERE id = ?', [req.session.user.id]);
+            return res.json({ success: true, repped_badge_id: null });
+        }
+        
+        // Verify the user owns this badge
+        const userBadge = await queryOne(
+            'SELECT id FROM user_badges WHERE user_id = ? AND badge_id = ?',
+            [req.session.user.id, badge_id]
+        );
+        
+        if (!userBadge) {
+            return res.status(400).json({ error: 'You do not own this badge' });
+        }
+        
+        await query('UPDATE users SET repped_badge_id = ? WHERE id = ?', [badge_id, req.session.user.id]);
+        
+        res.json({ success: true, repped_badge_id: badge_id });
+    } catch (error) {
+        console.error('Set repped badge error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });
@@ -1707,10 +1760,13 @@ app.get('/api/users/:username/badges', async (req, res) => {
 app.get('/api/profile/:username', async (req, res) => {
     try {
         const user = await queryOne(
-            `SELECT id, username, display_name, bio, avatar, background, 
-                    background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding,
-                    background_video, video_audio_default 
-             FROM users WHERE username = ?`,
+            `SELECT u.id, u.username, u.display_name, u.bio, u.avatar, u.background, 
+                    u.background_type, u.gradient_start, u.gradient_end, u.show_userid, u.is_premium, u.hide_branding,
+                    u.background_video, u.video_audio_default, u.repped_badge_id,
+                    b.name as repped_badge_name, b.image_url as repped_badge_image
+             FROM users u
+             LEFT JOIN badges b ON u.repped_badge_id = b.id
+             WHERE u.username = ?`,
             [req.params.username.toLowerCase()]
         );
         

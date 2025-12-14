@@ -934,6 +934,65 @@
         .loading-overlay.hidden {
             display: none;
         }
+
+        /* Badge Rep Section */
+        .owned-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .badge-option {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .badge-option:hover {
+            border-color: rgba(139, 92, 246, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .badge-option.selected {
+            border-color: var(--purple);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .badge-option.selected::after {
+            content: '✓';
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            background: var(--purple);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+        }
+
+        .badge-option img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .badge-option.no-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
     </style>
 </head>
 <body>
@@ -1055,6 +1114,19 @@
                             <input type="checkbox" id="showUserId">
                             <span class="toggle-slider"></span>
                         </label>
+                    </div>
+
+                    <!-- Badge Rep Section -->
+                    <div id="badgeRepSection" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 12px;">Rep a Badge</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">
+                            Select a badge to display next to your name on your profile.
+                        </p>
+                        <div id="ownedBadges" class="owned-badges">
+                            <div class="no-badges" style="color: var(--text-muted); font-size: 0.85rem;">
+                                You don't have any badges yet.
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1335,7 +1407,12 @@
                             <div class="preview-avatar" id="previewAvatar">
                                 <span id="previewAvatarInitial">?</span>
                             </div>
-                            <div class="preview-name" id="previewName">Your Name</div>
+                            <div style="display: flex; align-items: center; gap: 8px; justify-content: center;">
+                                <div class="preview-name" id="previewName">Your Name</div>
+                                <div id="previewReppedBadge" style="display: none;">
+                                    <img style="width: 24px; height: 24px; object-fit: contain;" alt="">
+                                </div>
+                            </div>
                             <div class="preview-userid" id="previewUserId" style="display: none;">#1</div>
                             <div class="preview-bio" id="previewBio">Your bio will appear here</div>
                             <div class="preview-links" id="previewLinks"></div>
@@ -1354,6 +1431,7 @@
         let currentUser = null;
         let links = [];
         let selectedPlatform = null;
+        let userBadges = [];
 
         // Platform icons map
         // Platform logos - using images from src/logos/
@@ -1413,6 +1491,7 @@
                 currentUser = data.user;
                 updateUI();
                 await loadLinks();
+                await loadUserBadges();
                 
                 document.getElementById('loadingOverlay').classList.add('hidden');
             } catch (error) {
@@ -1520,6 +1599,21 @@
             document.getElementById('previewBio').textContent = bio || 'Your bio will appear here';
             document.getElementById('previewBio').style.display = bio ? 'block' : 'none';
 
+            // Update repped badge in preview
+            const reppedBadgeEl = document.getElementById('previewReppedBadge');
+            if (currentUser.repped_badge_id && userBadges.length > 0) {
+                const badge = userBadges.find(b => b.id === currentUser.repped_badge_id);
+                if (badge) {
+                    reppedBadgeEl.querySelector('img').src = badge.image_url;
+                    reppedBadgeEl.querySelector('img').alt = badge.name;
+                    reppedBadgeEl.style.display = 'block';
+                } else {
+                    reppedBadgeEl.style.display = 'none';
+                }
+            } else {
+                reppedBadgeEl.style.display = 'none';
+            }
+
             const userIdEl = document.getElementById('previewUserId');
             userIdEl.textContent = '#' + currentUser.id;
             userIdEl.style.display = showUserId ? 'block' : 'none';
@@ -1591,6 +1685,77 @@
                 renderPreviewLinks();
             } catch (error) {
                 console.error('Load links error:', error);
+            }
+        }
+
+        async function loadUserBadges() {
+            try {
+                const res = await fetch('/api/profile/badges');
+                const data = await res.json();
+                userBadges = data.badges || [];
+                
+                const section = document.getElementById('badgeRepSection');
+                const container = document.getElementById('ownedBadges');
+                
+                if (userBadges.length > 0) {
+                    section.style.display = 'block';
+                    
+                    // Build badge options HTML
+                    let html = `
+                        <div class="badge-option no-badge ${!currentUser.repped_badge_id ? 'selected' : ''}" 
+                             onclick="setReppedBadge(null)" title="No badge">
+                            ✕
+                        </div>
+                    `;
+                    
+                    html += userBadges.map(badge => `
+                        <div class="badge-option ${currentUser.repped_badge_id === badge.id ? 'selected' : ''}" 
+                             onclick="setReppedBadge(${badge.id})" title="${badge.name}">
+                            <img src="${badge.image_url}" alt="${badge.name}" onerror="this.parentElement.style.display='none'">
+                        </div>
+                    `).join('');
+                    
+                    container.innerHTML = html;
+                } else {
+                    section.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Load badges error:', error);
+            }
+        }
+
+        async function setReppedBadge(badgeId) {
+            try {
+                const res = await fetch('/api/profile/repped-badge', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ badge_id: badgeId })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    currentUser.repped_badge_id = badgeId;
+                    
+                    // Update selected state
+                    document.querySelectorAll('.badge-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    
+                    if (badgeId === null) {
+                        document.querySelector('.badge-option.no-badge').classList.add('selected');
+                    } else {
+                        const selectedBadge = document.querySelector(`.badge-option[onclick="setReppedBadge(${badgeId})"]`);
+                        if (selectedBadge) selectedBadge.classList.add('selected');
+                    }
+                    
+                    updatePreview();
+                    showToast(badgeId ? 'Badge selected!' : 'Badge removed', 'success');
+                } else {
+                    showToast(data.error || 'Failed to update badge', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to update badge', 'error');
             }
         }
 

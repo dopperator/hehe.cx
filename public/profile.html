@@ -118,6 +118,22 @@
             display: none;
         }
 
+        .repped-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 4px;
+            margin-left: 4px;
+        }
+
+        .repped-badge img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
         .user-badge {
             width: 28px;
             height: 28px;
@@ -519,6 +535,9 @@
         </div>
         <div class="display-name-container">
             <h1 class="display-name" id="displayName">Loading...</h1>
+            <div class="repped-badge" id="reppedBadge" style="display: none;">
+                <img alt="">
+            </div>
             <div class="user-badges" id="userBadges"></div>
         </div>
         <div class="user-id hidden" id="userId">#1</div>
@@ -636,6 +655,15 @@
 
                 // Name
                 document.getElementById('displayName').textContent = user.display_name || user.username;
+
+                // Show repped badge if set
+                if (user.repped_badge_id && user.repped_badge_image) {
+                    const reppedBadgeEl = document.getElementById('reppedBadge');
+                    reppedBadgeEl.querySelector('img').src = user.repped_badge_image;
+                    reppedBadgeEl.querySelector('img').alt = user.repped_badge_name || 'Badge';
+                    reppedBadgeEl.title = user.repped_badge_name || 'Badge';
+                    reppedBadgeEl.style.display = 'block';
+                }
 
                 // Fetch and display badges
                 try {
