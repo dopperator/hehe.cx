@@ -1239,6 +1239,38 @@
 
                         <button class="btn btn-purple" style="margin-top: 16px;" onclick="saveMusicSettings()">Save Music Settings</button>
                     </div>
+
+                    <!-- Profile Display Settings -->
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 12px;">Profile Display Settings</h4>
+                        
+                        <div class="toggle-group" style="margin-bottom: 16px;">
+                            <div class="toggle-info">
+                                <h4>Click to Enter</h4>
+                                <p>Visitors must click to reveal your profile</p>
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" id="clickToEnter">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="embedPosition">Music Player Position</label>
+                            <select id="embedPosition">
+                                <option value="bottom-right">Bottom Right Corner</option>
+                                <option value="bottom-left">Bottom Left Corner</option>
+                                <option value="top-right">Top Right Corner</option>
+                                <option value="top-left">Top Left Corner</option>
+                                <option value="above-avatar">Above Profile Picture</option>
+                                <option value="below-username">Below Username</option>
+                                <option value="below-userid">Below User ID</option>
+                                <option value="below-links">Below Links</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-purple" onclick="saveDisplaySettings()">Save Display Settings</button>
+                    </div>
                 </div>
 
                 <!-- Links Section -->
@@ -1740,6 +1772,9 @@
 
             // Initialize music settings
             initMusicSettings();
+
+            // Initialize display settings
+            initDisplaySettings();
 
             updatePreview();
         }
@@ -2444,6 +2479,39 @@
                 }
             } catch (error) {
                 showToast('Failed to save music settings', 'error');
+            }
+        }
+
+        function initDisplaySettings() {
+            document.getElementById('clickToEnter').checked = currentUser.click_to_enter || false;
+            document.getElementById('embedPosition').value = currentUser.embed_position || 'bottom-right';
+        }
+
+        async function saveDisplaySettings() {
+            const clickToEnter = document.getElementById('clickToEnter').checked;
+            const embedPosition = document.getElementById('embedPosition').value;
+
+            try {
+                const res = await fetch('/api/profile/display', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        click_to_enter: clickToEnter,
+                        embed_position: embedPosition
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    currentUser.click_to_enter = clickToEnter;
+                    currentUser.embed_position = embedPosition;
+                    showToast('Display settings saved!', 'success');
+                } else {
+                    showToast(data.error || 'Failed to save', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to save display settings', 'error');
             }
         }
 

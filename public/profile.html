@@ -545,9 +545,154 @@
             opacity: 0;
             pointer-events: none;
         }
+
+        /* Click to Enter Overlay */
+        .click-to-enter-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            cursor: pointer;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .click-to-enter-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .click-to-enter-content {
+            text-align: center;
+            color: white;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .click-to-enter-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            overflow: hidden;
+        }
+
+        .click-to-enter-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .click-to-enter-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .click-to-enter-prompt {
+            font-size: 1rem;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        /* Spotify Embed Positions */
+        .spotify-embed {
+            border-radius: 12px;
+            border: none;
+            z-index: 99;
+        }
+
+        .spotify-embed.corner {
+            position: fixed;
+        }
+
+        .spotify-embed.bottom-right {
+            bottom: 70px;
+            right: 20px;
+        }
+
+        .spotify-embed.bottom-left {
+            bottom: 70px;
+            left: 20px;
+        }
+
+        .spotify-embed.top-right {
+            top: 20px;
+            right: 20px;
+        }
+
+        .spotify-embed.top-left {
+            top: 20px;
+            left: 20px;
+        }
+
+        .spotify-embed.inline {
+            position: relative;
+            margin: 10px auto;
+            display: block;
+        }
+
+        /* Inline embed containers */
+        .embed-placeholder {
+            display: none;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .embed-placeholder.active {
+            display: block;
+        }
+
+        @media (max-width: 480px) {
+            .spotify-embed.corner {
+                width: calc(100% - 40px);
+                max-width: 280px;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Click to Enter Overlay -->
+    <div class="click-to-enter-overlay hidden" id="clickToEnterOverlay" onclick="enterProfile()">
+        <div class="click-to-enter-content">
+            <div class="click-to-enter-avatar" id="overlayAvatar">
+                <span id="overlayAvatarInitial">?</span>
+            </div>
+            <div class="click-to-enter-name" id="overlayName">Loading...</div>
+            <div class="click-to-enter-prompt">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <polyline points="10 17 15 12 10 7"/>
+                    <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                Click to enter
+            </div>
+        </div>
+    </div>
+
     <div class="page-bg" id="pageBg"></div>
 
     <!-- Volume toggle for video backgrounds -->
@@ -600,6 +745,9 @@
             <span class="share-tooltip">Copied to clipboard!</span>
         </button>
 
+        <!-- Embed: Above Avatar -->
+        <div class="embed-placeholder" id="embedAboveAvatar"></div>
+
         <div class="avatar" id="avatar">
             <span id="avatarInitial">?</span>
         </div>
@@ -610,9 +758,20 @@
             </div>
             <div class="user-badges" id="userBadges"></div>
         </div>
+
+        <!-- Embed: Below Username -->
+        <div class="embed-placeholder" id="embedBelowUsername"></div>
+
         <div class="user-id hidden" id="userId">#1</div>
+
+        <!-- Embed: Below User ID -->
+        <div class="embed-placeholder" id="embedBelowUserid"></div>
+
         <p class="bio hidden" id="bio"></p>
         <div class="links" id="links"></div>
+
+        <!-- Embed: Below Links -->
+        <div class="embed-placeholder" id="embedBelowLinks"></div>
     </div>
 
     <footer class="profile-footer hidden" id="footer">
@@ -667,6 +826,49 @@
         let bgAudio = null;
         let musicMuted = true;
         let profileUser = null;
+        let profileEntered = false;
+
+        function setupClickToEnter(user) {
+            const overlay = document.getElementById('clickToEnterOverlay');
+            const overlayAvatar = document.getElementById('overlayAvatar');
+            const overlayName = document.getElementById('overlayName');
+            
+            // Set overlay avatar
+            const initial = (user.display_name || user.username)[0].toUpperCase();
+            if (user.avatar) {
+                overlayAvatar.innerHTML = `<img src="${getImageUrl(user.avatar)}" alt="${user.display_name || user.username}">`;
+            } else {
+                document.getElementById('overlayAvatarInitial').textContent = initial;
+            }
+            
+            // Set overlay name
+            overlayName.textContent = user.display_name || user.username;
+            
+            // Show overlay
+            overlay.classList.remove('hidden');
+        }
+
+        function enterProfile() {
+            if (profileEntered) return;
+            profileEntered = true;
+            
+            const overlay = document.getElementById('clickToEnterOverlay');
+            overlay.classList.add('hidden');
+            
+            showProfile(profileUser);
+        }
+
+        function showProfile(user) {
+            document.getElementById('profileContent').classList.remove('hidden');
+            
+            // Show footer unless premium user has hidden branding
+            if (!user.hide_branding) {
+                document.getElementById('footer').classList.remove('hidden');
+            }
+
+            // Setup background music
+            setupBackgroundMusic(user);
+        }
 
         async function loadProfile() {
             const username = window.location.pathname.slice(1);
@@ -781,20 +983,19 @@
                     </a>
                 `).join('');
 
-                // Show content
+                // Hide loading
                 document.getElementById('loading').classList.add('hidden');
-                document.getElementById('profileContent').classList.remove('hidden');
-                
-                // Show footer unless premium user has hidden branding
-                if (!user.hide_branding) {
-                    document.getElementById('footer').classList.remove('hidden');
-                }
 
                 // Store user for music handling
                 profileUser = user;
 
-                // Setup background music
-                setupBackgroundMusic(user);
+                // Handle click-to-enter
+                if (user.click_to_enter) {
+                    setupClickToEnter(user);
+                } else {
+                    // Show content immediately
+                    showProfile(user);
+                }
 
             } catch (error) {
                 console.error('Error loading profile:', error);
@@ -895,16 +1096,46 @@
             if (!match) return;
 
             const [, type, id] = match;
-            const container = document.getElementById('bgMusicContainer');
+            const position = user.embed_position || 'bottom-right';
             
             const iframe = document.createElement('iframe');
             iframe.id = 'spotifyPlayer';
+            iframe.className = 'spotify-embed';
             iframe.src = `https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0`;
             iframe.width = '300';
-            iframe.height = '80';
+            iframe.height = '152';
             iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
-            iframe.style.cssText = 'position: fixed; bottom: 70px; right: 20px; border-radius: 12px; border: none; z-index: 99; display: none;';
-            container.appendChild(iframe);
+            iframe.loading = 'lazy';
+            iframe.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+            
+            // Position the embed based on user preference
+            const cornerPositions = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
+            const inlinePositions = {
+                'above-avatar': 'embedAboveAvatar',
+                'below-username': 'embedBelowUsername',
+                'below-userid': 'embedBelowUserid',
+                'below-links': 'embedBelowLinks'
+            };
+            
+            if (cornerPositions.includes(position)) {
+                // Fixed corner position
+                iframe.classList.add('corner', position);
+                document.getElementById('bgMusicContainer').appendChild(iframe);
+            } else if (inlinePositions[position]) {
+                // Inline position within profile content
+                iframe.classList.add('inline');
+                const placeholder = document.getElementById(inlinePositions[position]);
+                placeholder.classList.add('active');
+                placeholder.appendChild(iframe);
+            } else {
+                // Default to bottom-right
+                iframe.classList.add('corner', 'bottom-right');
+                document.getElementById('bgMusicContainer').appendChild(iframe);
+            }
+            
+            // Spotify embeds are always visible (user must click play manually)
+            // Hide the music button since it doesn't control Spotify
+            document.getElementById('musicBtn').style.display = 'none';
             
             bgAudio = { type: 'spotify', iframe: iframe };
         }
