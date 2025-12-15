@@ -577,27 +577,6 @@
             animation: pulse 2s ease-in-out infinite;
         }
 
-        .click-to-enter-avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            border: 3px solid rgba(255, 255, 255, 0.4);
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            font-weight: 700;
-            overflow: hidden;
-        }
-
-        .click-to-enter-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
         .click-to-enter-name {
             font-size: 1.5rem;
             font-weight: 600;
@@ -678,9 +657,6 @@
     <!-- Click to Enter Overlay -->
     <div class="click-to-enter-overlay hidden" id="clickToEnterOverlay" onclick="enterProfile()">
         <div class="click-to-enter-content">
-            <div class="click-to-enter-avatar" id="overlayAvatar">
-                <span id="overlayAvatarInitial">?</span>
-            </div>
             <div class="click-to-enter-name" id="overlayName">Loading...</div>
             <div class="click-to-enter-prompt">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -830,16 +806,7 @@
 
         function setupClickToEnter(user) {
             const overlay = document.getElementById('clickToEnterOverlay');
-            const overlayAvatar = document.getElementById('overlayAvatar');
             const overlayName = document.getElementById('overlayName');
-            
-            // Set overlay avatar
-            const initial = (user.display_name || user.username)[0].toUpperCase();
-            if (user.avatar) {
-                overlayAvatar.innerHTML = `<img src="${getImageUrl(user.avatar)}" alt="${user.display_name || user.username}">`;
-            } else {
-                document.getElementById('overlayAvatarInitial').textContent = initial;
-            }
             
             // Set overlay name
             overlayName.textContent = user.display_name || user.username;
