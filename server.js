@@ -8,6 +8,16 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
+const mm = require('music-metadata');
+
+// Upload limits
+const UPLOAD_LIMITS = {
+    VIDEO_MAX_DURATION: 59, // seconds
+    VIDEO_MAX_SIZE: 50 * 1024 * 1024, // 50MB
+    AUDIO_MAX_SIZE: 5 * 1024 * 1024, // 5MB
+    IMAGE_MAX_SIZE_FREE: 10 * 1024 * 1024, // 10MB
+    IMAGE_MAX_SIZE_PREMIUM: 50 * 1024 * 1024 // 50MB
+};
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1135,11 +1145,34 @@ app.post('/api/profile/video', requireAuth, checkFileSize('video'), async (req, 
         }
         
         // Check file size (50MB max for videos)
-        if (req.file.size > 50 * 1024 * 1024) {
+        if (req.file.size > UPLOAD_LIMITS.VIDEO_MAX_SIZE) {
             if (!USE_SUPABASE_STORAGE && req.file.path) {
                 fs.unlinkSync(req.file.path);
             }
             return res.status(400).json({ error: 'Video must be under 50MB' });
+        }
+        
+        // Check video duration using music-metadata
+        try {
+            let metadata;
+            if (USE_SUPABASE_STORAGE) {
+                // Parse from buffer
+                metadata = await mm.parseBuffer(req.file.buffer, req.file.mimetype);
+            } else {
+                // Parse from file path
+                metadata = await mm.parseFile(req.file.path);
+            }
+            
+            const duration = metadata.format.duration || 0;
+            if (duration > UPLOAD_LIMITS.VIDEO_MAX_DURATION) {
+                if (!USE_SUPABASE_STORAGE && req.file.path) {
+                    fs.unlinkSync(req.file.path);
+                }
+                return res.status(400).json({ error: `Video must be ${UPLOAD_LIMITS.VIDEO_MAX_DURATION} seconds or less (yours is ${Math.ceil(duration)} seconds)` });
+            }
+        } catch (metadataError) {
+            console.error('Video metadata parse error:', metadataError);
+            // If we can't parse metadata, allow the upload but log it
         }
         
         let videoUrl;
@@ -1260,7 +1293,7 @@ app.post('/api/profile/audio', requireAuth, checkFileSize('audio'), async (req, 
         }
         
         // Check file size (5MB max for audio)
-        if (req.file.size > 5 * 1024 * 1024) {
+        if (req.file.size > UPLOAD_LIMITS.AUDIO_MAX_SIZE) {
             if (!USE_SUPABASE_STORAGE && req.file.path) {
                 fs.unlinkSync(req.file.path);
             }
