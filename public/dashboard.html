@@ -1183,6 +1183,9 @@
                                 <option value="soundcloud">SoundCloud</option>
                                 <option value="file" id="fileOption" style="display: none;">Custom Audio (Premium)</option>
                             </select>
+                            <div id="spotifyNotice" style="display: none; margin-top: 8px; padding: 10px 12px; background: rgba(30, 215, 96, 0.1); border: 1px solid rgba(30, 215, 96, 0.3); border-radius: 8px; font-size: 0.8rem; color: #1ed760;">
+                                <strong>Note:</strong> Spotify doesn't support autoplay. The player will appear as a visible embed on your profile. Consider enabling "Click to Enter" in Display Settings so visitors can interact with it after entering.
+                            </div>
                         </div>
 
                         <div id="musicUrlSection" style="display: none;">
@@ -2384,10 +2387,12 @@
             const urlSection = document.getElementById('musicUrlSection');
             const uploadSection = document.getElementById('audioUploadSection');
             const timingSection = document.getElementById('musicTimingSection');
+            const spotifyNotice = document.getElementById('spotifyNotice');
             
             urlSection.style.display = (type === 'youtube' || type === 'spotify' || type === 'soundcloud') ? 'block' : 'none';
             uploadSection.style.display = type === 'file' ? 'block' : 'none';
             timingSection.style.display = type !== 'none' ? 'block' : 'none';
+            spotifyNotice.style.display = type === 'spotify' ? 'block' : 'none';
             
             // Update hint text
             const hints = {
