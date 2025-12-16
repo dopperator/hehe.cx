@@ -448,6 +448,61 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 app.use('/src', express.static('src'));
 
+// ============ MEDIA PROXY (Hide Supabase URLs) ============
+
+// Proxy route for serving media files without exposing Supabase URLs
+app.get('/media/:bucket/:userId/:filename', async (req, res) => {
+    try {
+        const { bucket, userId, filename } = req.params;
+        const allowedBuckets = ['avatars', 'backgrounds', 'videos', 'audio'];
+        
+        if (!allowedBuckets.includes(bucket)) {
+            return res.status(404).send('Not found');
+        }
+        
+        if (USE_SUPABASE_STORAGE) {
+            // Fetch from Supabase and pipe to response
+            const filePath = `${userId}/${filename}`;
+            const { data, error } = await supabase.storage
+                .from(bucket)
+                .download(filePath);
+            
+            if (error || !data) {
+                return res.status(404).send('Not found');
+            }
+            
+            // Set appropriate content type based on extension
+            const ext = filename.split('.').pop().toLowerCase();
+            const contentTypes = {
+                'png': 'image/png',
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'gif': 'image/gif',
+                'webp': 'image/webp',
+                'mp4': 'video/mp4',
+                'webm': 'video/webm',
+                'mov': 'video/quicktime',
+                'mp3': 'audio/mpeg',
+                'wav': 'audio/wav',
+                'ogg': 'audio/ogg'
+            };
+            
+            res.setHeader('Content-Type', contentTypes[ext] || 'application/octet-stream');
+            res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+            
+            // Convert blob to buffer and send
+            const buffer = Buffer.from(await data.arrayBuffer());
+            res.send(buffer);
+        } else {
+            // Local storage - redirect to uploads folder
+            res.redirect(`/uploads/${bucket}/${filename}`);
+        }
+    } catch (error) {
+        console.error('Media proxy error:', error);
+        res.status(500).send('Server error');
+    }
+});
+
 app.use(session({
     secret: SESSION_SECRET,
     resave: false,
@@ -556,24 +611,36 @@ async function uploadToSupabase(bucket, filePath, buffer, contentType) {
     
     if (error) throw error;
     
-    // Get public URL
-    const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-    
-    return urlData.publicUrl;
+    // Return proxy URL instead of direct Supabase URL
+    // This hides the Supabase URL when users right-click images
+    return `/media/${bucket}/${filePath}`;
 }
 
 async function deleteFromSupabase(bucket, fileUrl) {
-    if (!fileUrl || !fileUrl.includes('supabase')) return;
+    if (!fileUrl) return;
     
     try {
-        // Extract file path from URL
-        const urlParts = fileUrl.split(`/storage/v1/object/public/${bucket}/`);
-        if (urlParts.length < 2) return;
+        let filePath;
         
-        const filePath = urlParts[1];
-        await supabase.storage.from(bucket).remove([filePath]);
+        // Handle new proxy URLs (/media/bucket/userId/filename)
+        if (fileUrl.startsWith('/media/')) {
+            const parts = fileUrl.split('/');
+            // /media/bucket/userId/filename -> userId/filename
+            if (parts.length >= 5) {
+                filePath = `${parts[3]}/${parts[4]}`;
+            }
+        }
+        // Handle old Supabase URLs for backwards compatibility
+        else if (fileUrl.includes('supabase')) {
+            const urlParts = fileUrl.split(`/storage/v1/object/public/${bucket}/`);
+            if (urlParts.length >= 2) {
+                filePath = urlParts[1];
+            }
+        }
+        
+        if (filePath) {
+            await supabase.storage.from(bucket).remove([filePath]);
+        }
     } catch (error) {
         console.error('Error deleting from Supabase:', error);
     }
