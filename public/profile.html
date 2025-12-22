@@ -99,6 +99,11 @@
             margin-bottom: 8px;
             animation: fadeInUp 0.6s ease-out 0.1s both;
             flex-wrap: wrap;
+            position: relative;
+        }
+
+        .display-name-container:has(.repped-badge:hover) {
+            z-index: 9999;
         }
 
         .display-name {
@@ -969,6 +974,44 @@
                     // Hide description div if empty
                     document.getElementById('badgeTooltipDesc').style.display = user.repped_badge_description ? 'block' : 'none';
                     reppedBadgeEl.style.display = 'block';
+                    
+                    // Add hover listeners for tooltip z-index (fallback for browsers without :has())
+                    const nameContainer = document.querySelector('.display-name-container');
+                    const badgeTooltip = reppedBadgeEl.querySelector('.badge-tooltip');
+                    
+                    reppedBadgeEl.addEventListener('mouseenter', () => {
+                        nameContainer.style.zIndex = '9999';
+                    });
+                    reppedBadgeEl.addEventListener('mouseleave', () => {
+                        nameContainer.style.zIndex = '';
+                    });
+                    
+                    // Mobile touch support - tap to show/hide tooltip
+                    reppedBadgeEl.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const isVisible = badgeTooltip.style.opacity === '1';
+                        if (isVisible) {
+                            badgeTooltip.style.opacity = '0';
+                            badgeTooltip.style.visibility = 'hidden';
+                            badgeTooltip.style.transform = 'translateX(-50%) translateY(-10px)';
+                            nameContainer.style.zIndex = '';
+                        } else {
+                            badgeTooltip.style.opacity = '1';
+                            badgeTooltip.style.visibility = 'visible';
+                            badgeTooltip.style.transform = 'translateX(-50%) translateY(0)';
+                            nameContainer.style.zIndex = '9999';
+                        }
+                    });
+                    
+                    // Close tooltip when tapping elsewhere on mobile
+                    document.addEventListener('click', (e) => {
+                        if (!reppedBadgeEl.contains(e.target)) {
+                            badgeTooltip.style.opacity = '0';
+                            badgeTooltip.style.visibility = 'hidden';
+                            badgeTooltip.style.transform = 'translateX(-50%) translateY(-10px)';
+                            nameContainer.style.zIndex = '';
+                        }
+                    });
                 }
 
                 // Hide share button if user has it disabled
