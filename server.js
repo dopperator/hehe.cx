@@ -2432,8 +2432,8 @@ app.get('/api/maintenance/status', (req, res) => {
 // ============ PAGE ROUTES ============
 
 app.get('/maintenance', (req, res) => {
-    // Redirect to home if maintenance mode is off
-    if (!maintenanceMode) {
+    // Redirect to home if both maintenance modes are off
+    if (!maintenanceMode && !viewOnlyMaintenanceMode) {
         return res.redirect('/');
     }
     res.sendFile(path.join(__dirname, 'public', 'maintenance.html'));
