@@ -787,6 +787,12 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+
+        /* Badge upload area */
+        #badgeUploadArea:hover {
+            border-color: var(--purple);
+            background: rgba(139, 92, 246, 0.05);
+        }
     </style>
 </head>
 <body>
@@ -936,8 +942,23 @@
                 <input type="text" id="badgeName" placeholder="e.g., Early Adopter">
             </div>
             <div class="form-group">
-                <label>Image URL</label>
-                <input type="text" id="badgeImageUrl" placeholder="https://...">
+                <label>Badge Image</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <button type="button" class="btn btn-sm" id="uploadTabBtn" onclick="switchBadgeImageTab('upload')" style="flex: 1; background: var(--purple);">Upload File</button>
+                    <button type="button" class="btn btn-sm btn-ghost" id="urlTabBtn" onclick="switchBadgeImageTab('url')" style="flex: 1;">Use URL</button>
+                </div>
+                <div id="badgeUploadTab">
+                    <input type="file" id="badgeFileInput" accept=".png,.jpg,.jpeg,.gif,.webp" style="display: none;" onchange="handleBadgeFileSelect(event)">
+                    <div id="badgeUploadArea" onclick="document.getElementById('badgeFileInput').click()" style="border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s;">
+                        <div id="badgePreviewContainer" style="display: none; margin-bottom: 10px;">
+                            <img id="badgePreviewImg" style="max-width: 64px; max-height: 64px; border-radius: 8px;">
+                        </div>
+                        <span id="badgeUploadText" style="color: var(--text-muted);">Click to upload image (PNG, JPG, GIF - max 2MB)</span>
+                    </div>
+                </div>
+                <div id="badgeUrlTab" style="display: none;">
+                    <input type="text" id="badgeImageUrl" placeholder="https://...">
+                </div>
             </div>
             <div class="form-group">
                 <label>Description (optional)</label>
@@ -945,7 +966,7 @@
             </div>
             <div class="modal-actions">
                 <button class="btn btn-ghost" onclick="closeCreateBadgeModal()">Cancel</button>
-                <button class="btn btn-purple" onclick="createBadge()">Create</button>
+                <button class="btn btn-purple" id="createBadgeBtn" onclick="createBadge()">Create</button>
             </div>
         </div>
     </div>
@@ -1831,35 +1852,158 @@
             }
         }
 
+        let badgeImageMode = 'upload';
+        let selectedBadgeFile = null;
+
         function showCreateBadgeModal() {
             document.getElementById('badgeName').value = '';
             document.getElementById('badgeImageUrl').value = '';
             document.getElementById('badgeDescription').value = '';
+            selectedBadgeFile = null;
+            badgeImageMode = 'upload';
+            
+            // Reset upload area
+            document.getElementById('badgePreviewContainer').style.display = 'none';
+            document.getElementById('badgeUploadText').textContent = 'Click to upload image (PNG, JPG, GIF - max 2MB)';
+            document.getElementById('badgeFileInput').value = '';
+            
+            // Reset tabs
+            switchBadgeImageTab('upload');
+            
             document.getElementById('createBadgeModal').classList.add('active');
         }
 
         function closeCreateBadgeModal() {
             document.getElementById('createBadgeModal').classList.remove('active');
+            selectedBadgeFile = null;
+        }
+
+        function switchBadgeImageTab(tab) {
+            badgeImageMode = tab;
+            const uploadTab = document.getElementById('badgeUploadTab');
+            const urlTab = document.getElementById('badgeUrlTab');
+            const uploadBtn = document.getElementById('uploadTabBtn');
+            const urlBtn = document.getElementById('urlTabBtn');
+            
+            if (tab === 'upload') {
+                uploadTab.style.display = 'block';
+                urlTab.style.display = 'none';
+                uploadBtn.style.background = 'var(--purple)';
+                uploadBtn.classList.remove('btn-ghost');
+                urlBtn.style.background = '';
+                urlBtn.classList.add('btn-ghost');
+            } else {
+                uploadTab.style.display = 'none';
+                urlTab.style.display = 'block';
+                urlBtn.style.background = 'var(--purple)';
+                urlBtn.classList.remove('btn-ghost');
+                uploadBtn.style.background = '';
+                uploadBtn.classList.add('btn-ghost');
+            }
+        }
+
+        function handleBadgeFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file size (2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('File must be under 2MB');
+                return;
+            }
+            
+            // Validate file type
+            const validTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please upload a PNG, JPG, GIF, or WebP image');
+                return;
+            }
+            
+            selectedBadgeFile = file;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('badgePreviewImg').src = e.target.result;
+                document.getElementById('badgePreviewContainer').style.display = 'block';
+                document.getElementById('badgeUploadText').textContent = file.name;
+            };
+            reader.readAsDataURL(file);
         }
 
         async function createBadge() {
             const name = document.getElementById('badgeName').value;
-            const image_url = document.getElementById('badgeImageUrl').value;
             const description = document.getElementById('badgeDescription').value;
-
-            if (!name || !image_url) {
-                alert('Name and image URL are required');
+            const createBtn = document.getElementById('createBadgeBtn');
+            
+            if (!name) {
+                alert('Badge name is required');
                 return;
             }
 
-            await fetch('/api/admin/badges', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, image_url, description })
-            });
+            let image_url;
 
-            closeCreateBadgeModal();
-            loadBadges();
+            if (badgeImageMode === 'upload') {
+                if (!selectedBadgeFile) {
+                    alert('Please select an image to upload');
+                    return;
+                }
+                
+                // Upload the file first
+                createBtn.textContent = 'Uploading...';
+                createBtn.disabled = true;
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('badge', selectedBadgeFile);
+                    
+                    const uploadRes = await fetch('/api/admin/badges/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const uploadData = await uploadRes.json();
+                    
+                    if (!uploadData.success) {
+                        alert(uploadData.error || 'Failed to upload image');
+                        createBtn.textContent = 'Create';
+                        createBtn.disabled = false;
+                        return;
+                    }
+                    
+                    image_url = uploadData.image_url;
+                } catch (err) {
+                    alert('Error uploading image');
+                    createBtn.textContent = 'Create';
+                    createBtn.disabled = false;
+                    return;
+                }
+            } else {
+                image_url = document.getElementById('badgeImageUrl').value;
+                if (!image_url) {
+                    alert('Please enter an image URL');
+                    return;
+                }
+            }
+
+            createBtn.textContent = 'Creating...';
+            createBtn.disabled = true;
+
+            try {
+                await fetch('/api/admin/badges', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, image_url, description })
+                });
+
+                closeCreateBadgeModal();
+                loadBadges();
+            } catch (err) {
+                alert('Error creating badge');
+            }
+            
+            createBtn.textContent = 'Create';
+            createBtn.disabled = false;
         }
 
         async function deleteBadge(badgeId) {

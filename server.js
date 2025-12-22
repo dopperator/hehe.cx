@@ -2302,21 +2302,58 @@ app.get('/api/admin/badges', requireAdmin, async (req, res) => {
     }
 });
 
+// Upload badge image
+app.post('/api/admin/badges/upload', requireAdmin, upload.single('badge'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        // Check file size (2MB max for badges)
+        if (req.file.size > 2 * 1024 * 1024) {
+            return res.status(400).json({ error: 'Badge image must be under 2MB' });
+        }
+
+        let imageUrl;
+
+        if (USE_SUPABASE_STORAGE) {
+            // Upload to Supabase Storage in badges bucket
+            const fileName = `badges/${uuidv4()}${path.extname(req.file.originalname)}`;
+            imageUrl = await uploadToSupabase('avatars', fileName, req.file.buffer, req.file.mimetype);
+        } else {
+            // Local storage - save to uploads/badges folder
+            const badgesDir = 'uploads/badges';
+            if (!fs.existsSync(badgesDir)) {
+                fs.mkdirSync(badgesDir, { recursive: true });
+            }
+            const fileName = `${uuidv4()}${path.extname(req.file.originalname)}`;
+            const filePath = path.join(badgesDir, fileName);
+            fs.writeFileSync(filePath, req.file.buffer);
+            imageUrl = '/' + filePath.replace(/\\/g, '/');
+        }
+
+        res.json({ success: true, image_url: imageUrl });
+    } catch (error) {
+        console.error('Badge upload error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Create badge
 app.post('/api/admin/badges', requireAdmin, async (req, res) => {
     try {
         const { name, image_url, description } = req.body;
-        
+
         if (!name || !image_url) {
             return res.status(400).json({ error: 'Name and image URL are required' });
         }
-        
+
         const badge = await insertAndReturn('badges', {
             name,
             image_url,
             description: description || null
         });
-        
+
         res.json({ success: true, badge });
     } catch (error) {
         console.error('Create badge error:', error);
