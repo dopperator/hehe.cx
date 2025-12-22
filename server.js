@@ -2490,6 +2490,28 @@ app.post('/api/admin/badges', requireAdmin, async (req, res) => {
     }
 });
 
+// Update badge
+app.put('/api/admin/badges/:id', requireAdmin, async (req, res) => {
+    try {
+        const { name, description } = req.body;
+        
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Badge name is required' });
+        }
+
+        await query(
+            'UPDATE badges SET name = ?, description = ? WHERE id = ?',
+            [name.trim(), description?.trim() || null, req.params.id]
+        );
+
+        const badge = await queryOne('SELECT * FROM badges WHERE id = ?', [req.params.id]);
+        res.json({ success: true, badge });
+    } catch (error) {
+        console.error('Update badge error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Delete badge
 app.delete('/api/admin/badges/:id', requireAdmin, async (req, res) => {
     try {

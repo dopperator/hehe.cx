@@ -971,6 +971,25 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="editBadgeModal">
+        <div class="modal">
+            <h3>Edit Badge</h3>
+            <input type="hidden" id="editBadgeId">
+            <div class="form-group">
+                <label>Badge Name</label>
+                <input type="text" id="editBadgeName" placeholder="e.g., Early Adopter">
+            </div>
+            <div class="form-group">
+                <label>Description (optional)</label>
+                <textarea id="editBadgeDescription" placeholder="What does this badge represent?"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeEditBadgeModal()">Cancel</button>
+                <button class="btn btn-purple" onclick="saveEditBadge()">Save</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="editLinkModal">
         <div class="modal">
             <h3>Edit Link</h3>
@@ -1881,7 +1900,8 @@
                                 <div class="badge-name">${escapeHtml(badge.name)}</div>
                                 <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(badge.description || 'No description')}</div>
                             </div>
-                            <button class="btn btn-ghost btn-sm" onclick="deleteBadge(${badge.id})">×</button>
+                            <button class="btn btn-ghost btn-sm" onclick="showEditBadgeModal(${badge.id})" title="Edit">✏️</button>
+                            <button class="btn btn-ghost btn-sm" onclick="deleteBadge(${badge.id})" title="Delete">×</button>
                         </div>
                     `).join('') :
                     '<p style="color: var(--text-muted); text-align: center;">No badges created yet</p>';
@@ -2048,6 +2068,50 @@
             if (!confirm('Delete this badge? It will be removed from all users.')) return;
             await fetch(`/api/admin/badges/${badgeId}`, { method: 'DELETE' });
             loadBadges();
+        }
+
+        function showEditBadgeModal(badgeId) {
+            const badge = allBadges.find(b => b.id === badgeId);
+            if (!badge) return;
+            
+            document.getElementById('editBadgeId').value = badgeId;
+            document.getElementById('editBadgeName').value = badge.name || '';
+            document.getElementById('editBadgeDescription').value = badge.description || '';
+            document.getElementById('editBadgeModal').classList.add('active');
+        }
+
+        function closeEditBadgeModal() {
+            document.getElementById('editBadgeModal').classList.remove('active');
+        }
+
+        async function saveEditBadge() {
+            const badgeId = document.getElementById('editBadgeId').value;
+            const name = document.getElementById('editBadgeName').value.trim();
+            const description = document.getElementById('editBadgeDescription').value.trim();
+
+            if (!name) {
+                alert('Badge name is required');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/admin/badges/${badgeId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    closeEditBadgeModal();
+                    loadBadges();
+                } else {
+                    alert(data.error || 'Failed to update badge');
+                }
+            } catch (err) {
+                alert('Error updating badge');
+            }
         }
 
         // Close modals on escape
