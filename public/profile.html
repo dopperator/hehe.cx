@@ -138,9 +138,9 @@
 
         .badge-tooltip {
             position: absolute;
-            bottom: calc(100% + 12px);
+            top: calc(100% + 12px);
             left: 50%;
-            transform: translateX(-50%) translateY(10px);
+            transform: translateX(-50%) translateY(-10px);
             background: rgba(20, 20, 30, 0.98);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -161,14 +161,14 @@
             z-index: 9999;
         }
 
-        .badge-tooltip::after {
+        .badge-tooltip::before {
             content: '';
             position: absolute;
-            top: 100%;
+            bottom: 100%;
             left: 50%;
             transform: translateX(-50%);
             border: 8px solid transparent;
-            border-top-color: rgba(20, 20, 30, 0.95);
+            border-bottom-color: rgba(20, 20, 30, 0.98);
         }
 
         .repped-badge:hover .badge-tooltip {
