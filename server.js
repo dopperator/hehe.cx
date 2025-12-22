@@ -411,6 +411,7 @@ const checkMaintenance = (req, res, next) => {
     // Always allow these paths regardless of maintenance mode
     if (req.path === '/maintenance' ||
         req.path === '/maintenance.html' ||
+        req.path === '/api/maintenance/status' ||
         req.path.startsWith('/admin-panel-for-the-lolz') ||
         req.path.startsWith('/api/admin') ||
         req.path.startsWith('/src/') ||
