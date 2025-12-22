@@ -581,12 +581,13 @@ const storage = USE_SUPABASE_STORAGE
 const fileFilter = (req, file, cb) => {
     const user = req.session.user;
     const isPremium = user?.is_premium;
-    
+
     const allowedTypes = {
         avatar: isPremium ? ['image/png', 'image/gif'] : ['image/png'],
         background: isPremium ? ['image/png', 'image/jpeg', 'image/gif'] : ['image/png', 'image/jpeg'],
         video: isPremium ? ['video/mp4', 'video/webm', 'video/quicktime'] : [],
-        audio: isPremium ? ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3'] : []
+        audio: isPremium ? ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3'] : [],
+        badge: ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
     };
     
     const fieldAllowed = allowedTypes[file.fieldname] || [];
@@ -2309,9 +2310,9 @@ app.post('/api/admin/badges/upload', requireAdmin, upload.single('badge'), async
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        // Check file size (2MB max for badges)
-        if (req.file.size > 2 * 1024 * 1024) {
-            return res.status(400).json({ error: 'Badge image must be under 2MB' });
+        // Check file size (10MB max for badges)
+        if (req.file.size > 10 * 1024 * 1024) {
+            return res.status(400).json({ error: 'Badge image must be under 10MB' });
         }
 
         let imageUrl;

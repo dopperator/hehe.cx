@@ -953,7 +953,7 @@
                         <div id="badgePreviewContainer" style="display: none; margin-bottom: 10px;">
                             <img id="badgePreviewImg" style="max-width: 64px; max-height: 64px; border-radius: 8px;">
                         </div>
-                        <span id="badgeUploadText" style="color: var(--text-muted);">Click to upload image (PNG, JPG, GIF - max 2MB)</span>
+                        <span id="badgeUploadText" style="color: var(--text-muted);">Click to upload image (PNG, JPG, GIF - max 10MB)</span>
                     </div>
                 </div>
                 <div id="badgeUrlTab" style="display: none;">
@@ -1906,9 +1906,9 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            // Validate file size (2MB)
-            if (file.size > 2 * 1024 * 1024) {
-                alert('File must be under 2MB');
+            // Validate file size (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File must be under 10MB');
                 return;
             }
             
