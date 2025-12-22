@@ -12,6 +12,8 @@
         :root {
             --gold: #ffd700;
             --purple: #8b5cf6;
+            --yellow: #eab308;
+            --red: #ef4444;
             --bg-dark: #0a0a0f;
             --text: #f5f5f7;
             --text-muted: #71717a;
@@ -83,6 +85,27 @@
             border-radius: 100px;
             font-size: 0.95rem;
             color: var(--purple);
+            transition: all 0.3s ease;
+        }
+
+        .status.full-maintenance {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: var(--red);
+        }
+
+        .status.full-maintenance .status-dot {
+            background: var(--red);
+        }
+
+        .status.view-only {
+            background: rgba(234, 179, 8, 0.1);
+            border-color: rgba(234, 179, 8, 0.3);
+            color: var(--yellow);
+        }
+
+        .status.view-only .status-dot {
+            background: var(--yellow);
         }
 
         .status-dot {
@@ -112,17 +135,57 @@
         .admin-link a:hover {
             color: var(--purple);
         }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-top: 16px;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <img src="/src/logo.png" alt="hehe.cx" class="icon">
-        <h1>Come back later...</h1>
-        <div class="status">
+        <h1 id="mainTitle">Come back later...</h1>
+        <div class="status" id="statusBadge">
             <div class="status-dot"></div>
-            Under maintenance
+            <span id="statusText">Under maintenance</span>
         </div>
+        <p class="subtitle" id="subtitle"></p>
     </div>
+
+    <script>
+        // Fetch maintenance status and update UI accordingly
+        fetch('/api/maintenance/status')
+            .then(res => res.json())
+            .then(data => {
+                const statusBadge = document.getElementById('statusBadge');
+                const statusText = document.getElementById('statusText');
+                const mainTitle = document.getElementById('mainTitle');
+                const subtitle = document.getElementById('subtitle');
+
+                if (data.maintenance_mode) {
+                    // Full maintenance mode
+                    statusBadge.classList.add('full-maintenance');
+                    statusText.textContent = 'Full maintenance';
+                    mainTitle.textContent = 'Come back later...';
+                } else if (data.view_only_maintenance_mode) {
+                    // View-only maintenance mode
+                    statusBadge.classList.add('view-only');
+                    statusText.textContent = 'View-only mode';
+                    mainTitle.textContent = 'Limited access';
+                    subtitle.textContent = 'You can still view user profiles during maintenance.';
+                    subtitle.style.display = 'block';
+                } else {
+                    // Not in maintenance - redirect to home
+                    window.location.href = '/';
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching maintenance status:', err);
+            });
+    </script>
 </body>
 </html>
 

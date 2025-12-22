@@ -180,6 +180,7 @@ async function initDatabase() {
                 );
 
                 INSERT INTO settings (key, value) VALUES ('maintenance_mode', 'false') ON CONFLICT (key) DO NOTHING;
+                INSERT INTO settings (key, value) VALUES ('view_only_maintenance_mode', 'false') ON CONFLICT (key) DO NOTHING;
             `);
 
             // Run migrations for new columns
@@ -303,6 +304,7 @@ async function initDatabase() {
                 );
 
                 INSERT OR IGNORE INTO settings (key, value) VALUES ('maintenance_mode', 'false');
+                INSERT OR IGNORE INTO settings (key, value) VALUES ('view_only_maintenance_mode', 'false');
             `);
             
             // Migrations for new columns
@@ -402,6 +404,7 @@ async function insertAndReturn(table, data, returnFields = '*') {
 
 // In-memory maintenance mode state (loaded from DB on startup)
 let maintenanceMode = false;
+let viewOnlyMaintenanceMode = false;
 
 // Maintenance mode middleware - defined before use
 const checkMaintenance = (req, res, next) => {
@@ -411,12 +414,13 @@ const checkMaintenance = (req, res, next) => {
         req.path.startsWith('/admin-panel-for-the-lolz') ||
         req.path.startsWith('/api/admin') ||
         req.path.startsWith('/src/') ||
-        req.path.startsWith('/uploads/')) {
+        req.path.startsWith('/uploads/') ||
+        req.path.startsWith('/media/')) {
         return next();
     }
 
-    // If maintenance mode is off, allow everything
-    if (!maintenanceMode) {
+    // If both maintenance modes are off, allow everything
+    if (!maintenanceMode && !viewOnlyMaintenanceMode) {
         return next();
     }
 
@@ -430,6 +434,36 @@ const checkMaintenance = (req, res, next) => {
         return next();
     }
 
+    // VIEW ONLY MAINTENANCE MODE - Allow viewing profiles only
+    if (viewOnlyMaintenanceMode && !maintenanceMode) {
+        // Allow public profile API
+        if (req.path.startsWith('/api/profile/') && req.method === 'GET') {
+            return next();
+        }
+        // Allow user badges API (for profile pages)
+        if (req.path.match(/^\/api\/users\/[^\/]+\/badges$/) && req.method === 'GET') {
+            return next();
+        }
+        // Allow profile pages (username routes - but not dashboard, help, etc.)
+        const reservedPaths = ['/', '/dashboard', '/premium', '/help', '/terms', '/privacy', '/login', '/signup', '/register'];
+        if (!reservedPaths.includes(req.path) && 
+            !req.path.startsWith('/api/') && 
+            !req.path.includes('.') &&
+            req.path !== '/') {
+            // This is likely a username route - allow it
+            return next();
+        }
+        
+        // Block API routes during view-only maintenance (except allowed ones above)
+        if (req.path.startsWith('/api/')) {
+            return res.status(503).json({ error: 'Site is in view-only maintenance mode', maintenance: true, viewOnly: true });
+        }
+        
+        // Redirect other pages to maintenance
+        return res.redirect('/maintenance');
+    }
+
+    // FULL MAINTENANCE MODE - Block everything
     // Block API routes during maintenance
     if (req.path.startsWith('/api/')) {
         return res.status(503).json({ error: 'Site is under maintenance', maintenance: true });
@@ -866,7 +900,7 @@ app.post('/api/auth/signup', async (req, res) => {
         }
         
         // Reserved usernames that cannot be claimed
-        const reservedUsernames = ['admin', 'administrator', 'api', 'dashboard', 'help', 'premium', 'settings', 'login', 'logout', 'signup', 'register', 'profile', 'user', 'users', 'support', 'contact', 'about', 'terms', 'privacy', 'tos', 'null', 'termsofservice', 'privacypolicy', 'undefined', 'hehecx', 'hehe', 'hehe.cx', 'root', 'system', 'maintenance'];
+        const reservedUsernames = ['admin', 'administrator', 'api', 'dashboard', 'dash-board', 'dash_board', 'help', 'premium', 'settings', 'login', 'log-in', 'log_in', 'logout', 'log-out', 'log_out', 'signup', 'sign-up', 'sign_up', 'signin', 'sign-in', 'sign_in', 'register', 'profile', 'user', 'users', 'support', 'contact', 'contactus', 'contact-us', 'contact_us', 'about', 'aboutus', 'about-us', 'about_us', 'terms', 'privacy', 'tos', 'null', 'termsofservice', 'terms-of-service', 'terms_of_service', 'terms-of_service', 'terms_of-service', 'privacypolicy', 'privacy-policy', 'privacy_policy', 'undefined', 'hehecx', 'hehe', 'hehe.cx', 'hehe-cx', 'hehe_cx', 'root', 'system', 'maintenance'];
         if (reservedUsernames.includes(username.toLowerCase())) {
             return res.status(400).json({ error: 'This username cannot be used' });
         }
@@ -1795,7 +1829,8 @@ app.get('/api/admin/status', async (req, res) => {
             return res.json({ 
                 authenticated: true, 
                 admin: { id: admin.id, email: admin.email, username: admin.username },
-                maintenance_mode: maintenanceMode
+                maintenance_mode: maintenanceMode,
+                view_only_maintenance_mode: viewOnlyMaintenanceMode
             });
         }
     }
@@ -1804,10 +1839,13 @@ app.get('/api/admin/status', async (req, res) => {
 
 // Get maintenance mode status
 app.get('/api/admin/maintenance', requireAdmin, async (req, res) => {
-    res.json({ maintenance_mode: maintenanceMode });
+    res.json({ 
+        maintenance_mode: maintenanceMode,
+        view_only_maintenance_mode: viewOnlyMaintenanceMode
+    });
 });
 
-// Toggle maintenance mode
+// Toggle full maintenance mode
 app.put('/api/admin/maintenance', requireAdmin, async (req, res) => {
     try {
         const { enabled } = req.body;
@@ -1816,10 +1854,47 @@ app.put('/api/admin/maintenance', requireAdmin, async (req, res) => {
         await query("UPDATE settings SET value = ? WHERE key = 'maintenance_mode'", [newValue]);
         maintenanceMode = enabled;
         
-        console.log(`🔧 Maintenance mode ${enabled ? 'ENABLED' : 'DISABLED'} by admin`);
-        res.json({ success: true, maintenance_mode: maintenanceMode });
+        // If enabling full maintenance, disable view-only maintenance
+        if (enabled && viewOnlyMaintenanceMode) {
+            await query("UPDATE settings SET value = 'false' WHERE key = 'view_only_maintenance_mode'");
+            viewOnlyMaintenanceMode = false;
+        }
+        
+        console.log(`🔧 Full Maintenance mode ${enabled ? 'ENABLED' : 'DISABLED'} by admin`);
+        res.json({ 
+            success: true, 
+            maintenance_mode: maintenanceMode,
+            view_only_maintenance_mode: viewOnlyMaintenanceMode
+        });
     } catch (error) {
         console.error('Toggle maintenance mode error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Toggle view-only maintenance mode
+app.put('/api/admin/maintenance/view-only', requireAdmin, async (req, res) => {
+    try {
+        const { enabled } = req.body;
+        const newValue = enabled ? 'true' : 'false';
+        
+        await query("UPDATE settings SET value = ? WHERE key = 'view_only_maintenance_mode'", [newValue]);
+        viewOnlyMaintenanceMode = enabled;
+        
+        // If enabling view-only maintenance, disable full maintenance
+        if (enabled && maintenanceMode) {
+            await query("UPDATE settings SET value = 'false' WHERE key = 'maintenance_mode'");
+            maintenanceMode = false;
+        }
+        
+        console.log(`🔧 View-Only Maintenance mode ${enabled ? 'ENABLED' : 'DISABLED'} by admin`);
+        res.json({ 
+            success: true, 
+            maintenance_mode: maintenanceMode,
+            view_only_maintenance_mode: viewOnlyMaintenanceMode
+        });
+    } catch (error) {
+        console.error('Toggle view-only maintenance mode error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });
@@ -2346,6 +2421,14 @@ app.get('/api/profile/:username', async (req, res) => {
     }
 });
 
+// Public maintenance status (for maintenance page)
+app.get('/api/maintenance/status', (req, res) => {
+    res.json({
+        maintenance_mode: maintenanceMode,
+        view_only_maintenance_mode: viewOnlyMaintenanceMode
+    });
+});
+
 // ============ PAGE ROUTES ============
 
 app.get('/maintenance', (req, res) => {
@@ -2415,7 +2498,17 @@ async function start() {
         try {
             const setting = await queryOne("SELECT value FROM settings WHERE key = 'maintenance_mode'");
             maintenanceMode = setting && setting.value === 'true';
-            console.log(`🔧 Maintenance mode: ${maintenanceMode ? 'ENABLED' : 'disabled'}`);
+            
+            const viewOnlySetting = await queryOne("SELECT value FROM settings WHERE key = 'view_only_maintenance_mode'");
+            viewOnlyMaintenanceMode = viewOnlySetting && viewOnlySetting.value === 'true';
+            
+            if (maintenanceMode) {
+                console.log(`🔧 Full Maintenance mode: ENABLED`);
+            } else if (viewOnlyMaintenanceMode) {
+                console.log(`🔧 View-Only Maintenance mode: ENABLED`);
+            } else {
+                console.log(`🔧 Maintenance mode: disabled`);
+            }
         } catch (e) {
             console.log('⚠️ Could not load maintenance mode setting');
         }

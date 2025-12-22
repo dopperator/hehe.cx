@@ -869,11 +869,21 @@
                         <h3 style="font-size: 1rem; color: var(--text-muted); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px;">Maintenance Mode</h3>
                         <div class="maintenance-toggle">
                             <div class="toggle-info">
-                                <span class="toggle-label">Enable Maintenance Mode</span>
+                                <span class="toggle-label">Full Maintenance Mode</span>
                                 <span class="toggle-desc">Block all users except admins from accessing the site</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="maintenance-toggle" style="border-top: 1px solid var(--border); padding-top: 16px;">
+                            <div class="toggle-info">
+                                <span class="toggle-label">View Only Maintenance Mode</span>
+                                <span class="toggle-desc">Users can only view profiles, all other features are disabled</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="viewOnlyMaintenanceToggle" onchange="toggleViewOnlyMaintenance()">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -991,7 +1001,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.authenticated) {
-                    showAdminPanel(data.admin, data.maintenance_mode);
+                    showAdminPanel(data.admin, data.maintenance_mode, data.view_only_maintenance_mode);
                 }
             });
 
@@ -1092,15 +1102,15 @@
             }
         }
 
-        function showAdminPanel(admin, maintenanceMode) {
+        function showAdminPanel(admin, maintenanceMode, viewOnlyMaintenanceMode) {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('adminPanel').classList.add('active');
             document.getElementById('adminUsername').textContent = admin.email;
             loadBadges();
             
             // Set initial maintenance mode state
-            if (typeof maintenanceMode !== 'undefined') {
-                updateMaintenanceUI(maintenanceMode);
+            if (typeof maintenanceMode !== 'undefined' || typeof viewOnlyMaintenanceMode !== 'undefined') {
+                updateMaintenanceUI(maintenanceMode, viewOnlyMaintenanceMode);
             }
         }
 
@@ -1108,23 +1118,33 @@
             fetch('/api/admin/maintenance')
                 .then(res => res.json())
                 .then(data => {
-                    updateMaintenanceUI(data.maintenance_mode);
+                    updateMaintenanceUI(data.maintenance_mode, data.view_only_maintenance_mode);
                 })
                 .catch(err => console.error('Error loading maintenance status:', err));
         }
 
-        function updateMaintenanceUI(enabled) {
+        function updateMaintenanceUI(fullEnabled, viewOnlyEnabled) {
             const toggle = document.getElementById('maintenanceToggle');
+            const viewOnlyToggle = document.getElementById('viewOnlyMaintenanceToggle');
             const status = document.getElementById('maintenanceStatus');
-            const indicator = status.querySelector('.status-indicator');
             
-            toggle.checked = enabled;
+            toggle.checked = fullEnabled;
+            viewOnlyToggle.checked = viewOnlyEnabled;
             
-            if (enabled) {
+            if (fullEnabled) {
                 status.classList.add('maintenance-on');
-                status.innerHTML = '<span class="status-indicator on"></span><span>Site is in maintenance mode</span>';
+                status.innerHTML = '<span class="status-indicator on"></span><span>Site is in full maintenance mode</span>';
+            } else if (viewOnlyEnabled) {
+                status.classList.add('maintenance-on');
+                status.style.background = 'rgba(234, 179, 8, 0.1)';
+                status.style.borderColor = 'rgba(234, 179, 8, 0.3)';
+                status.style.color = '#eab308';
+                status.innerHTML = '<span class="status-indicator on" style="background: #eab308;"></span><span>Site is in view-only maintenance mode</span>';
             } else {
                 status.classList.remove('maintenance-on');
+                status.style.background = '';
+                status.style.borderColor = '';
+                status.style.color = '';
                 status.innerHTML = '<span class="status-indicator"></span><span>Site is online</span>';
             }
         }
@@ -1143,7 +1163,7 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    updateMaintenanceUI(data.maintenance_mode);
+                    updateMaintenanceUI(data.maintenance_mode, data.view_only_maintenance_mode);
                 } else {
                     // Revert toggle on error
                     toggle.checked = !enabled;
@@ -1152,6 +1172,32 @@
             } catch (err) {
                 toggle.checked = !enabled;
                 alert('Error updating maintenance mode');
+            }
+        }
+
+        async function toggleViewOnlyMaintenance() {
+            const toggle = document.getElementById('viewOnlyMaintenanceToggle');
+            const enabled = toggle.checked;
+            
+            try {
+                const res = await fetch('/api/admin/maintenance/view-only', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    updateMaintenanceUI(data.maintenance_mode, data.view_only_maintenance_mode);
+                } else {
+                    // Revert toggle on error
+                    toggle.checked = !enabled;
+                    alert('Failed to update view-only maintenance mode');
+                }
+            } catch (err) {
+                toggle.checked = !enabled;
+                alert('Error updating view-only maintenance mode');
             }
         }
 
