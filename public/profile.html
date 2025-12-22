@@ -1301,27 +1301,60 @@
             }
         }
 
-        // Handle page visibility change (for mobile browsers returning to the page)
-        document.addEventListener('visibilitychange', function() {
-            if (document.visibilityState === 'visible') {
-                // Resume video playback
-                if (bgVideo && bgVideo.paused) {
-                    bgVideo.play().catch(() => {});
-                }
-                // Resume audio playback if it was playing
-                if (bgAudio && !musicMuted && bgAudio.paused) {
-                    bgAudio.play().catch(() => {});
-                }
-            }
-        });
-
-        // Also handle page focus for desktop browsers
-        window.addEventListener('focus', function() {
+        // Resume media playback helper
+        function resumeMediaPlayback() {
             if (bgVideo && bgVideo.paused) {
                 bgVideo.play().catch(() => {});
             }
             if (bgAudio && !musicMuted && bgAudio.paused) {
                 bgAudio.play().catch(() => {});
+            }
+        }
+
+        // Chrome mobile autoplay policy fallback - resume on first touch after returning
+        let needsResumeOnTouch = false;
+
+        // Handle page visibility change (for mobile browsers returning to the page)
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                resumeMediaPlayback();
+            } else {
+                // Page is being hidden - flag for touch resume on return
+                needsResumeOnTouch = true;
+            }
+        });
+
+        // Handle pageshow event (fires when page is shown, including back/forward navigation)
+        // This is crucial for iOS Safari and mobile browsers using bfcache
+        window.addEventListener('pageshow', function(event) {
+            resumeMediaPlayback();
+        });
+
+        // Handle page focus for desktop browsers
+        window.addEventListener('focus', function() {
+            resumeMediaPlayback();
+        });
+
+        // Fallback: periodically check if video should be playing but isn't
+        // This catches edge cases on problematic mobile browsers
+        setInterval(function() {
+            if (document.visibilityState === 'visible' && bgVideo && bgVideo.paused && !document.hidden) {
+                bgVideo.play().catch(() => {});
+            }
+        }, 1000);
+
+        // Touch/click fallback for Chrome mobile autoplay policy
+        document.addEventListener('touchstart', function() {
+            if (needsResumeOnTouch) {
+                resumeMediaPlayback();
+                needsResumeOnTouch = false;
+            }
+        }, { passive: true });
+
+        document.addEventListener('click', function() {
+            if (needsResumeOnTouch) {
+                resumeMediaPlayback();
+                needsResumeOnTouch = false;
             }
         });
 
