@@ -141,7 +141,7 @@
             bottom: calc(100% + 12px);
             left: 50%;
             transform: translateX(-50%) translateY(10px);
-            background: rgba(20, 20, 30, 0.95);
+            background: rgba(20, 20, 30, 0.98);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 12px;
@@ -153,8 +153,12 @@
             visibility: hidden;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: none;
-            z-index: 1000;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            z-index: 9999;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .repped-badge:hover {
+            z-index: 9999;
         }
 
         .badge-tooltip::after {
@@ -207,11 +211,12 @@
             object-fit: contain;
         }
 
-        .badge-tooltip {
+        /* Old tooltip styles for user-badges (kept for compatibility) */
+        .user-badge-tooltip {
             position: relative;
         }
 
-        .badge-tooltip::after {
+        .user-badge-tooltip::after {
             content: attr(data-tooltip);
             position: absolute;
             bottom: 100%;
@@ -229,7 +234,7 @@
             margin-bottom: 6px;
         }
 
-        .badge-tooltip:hover::after {
+        .user-badge-tooltip:hover::after {
             opacity: 1;
         }
 
