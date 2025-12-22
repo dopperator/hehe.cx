@@ -561,6 +561,15 @@
             cursor: grabbing;
         }
 
+        .link-item.drag-over {
+            border: 2px dashed var(--primary);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .link-item[draggable="true"] {
+            transition: opacity 0.2s, border 0.2s, background 0.2s;
+        }
+
         .link-icon {
             width: 40px;
             height: 40px;
@@ -1689,6 +1698,9 @@
                 await loadLinks();
                 await loadUserBadges();
                 
+                // Update preview again after badges are loaded
+                updatePreview();
+
                 document.getElementById('loadingOverlay').classList.add('hidden');
             } catch (error) {
                 console.error('Init error:', error);
@@ -1972,7 +1984,7 @@
 
             empty.style.display = 'none';
             container.innerHTML = links.map(link => `
-                <div class="link-item" data-id="${link.id}">
+                <div class="link-item" data-id="${link.id}" draggable="true">
                     <div class="link-drag">⋮⋮</div>
                     <div class="link-icon">${getPlatformIcon(link.platform, 24)}</div>
                     <div class="link-info">
@@ -1987,6 +1999,95 @@
                     </div>
                 </div>
             `).join('') + empty.outerHTML;
+
+            // Add drag-and-drop event listeners
+            initLinkDragAndDrop();
+        }
+
+        // Drag and drop for link reordering
+        let draggedLink = null;
+
+        function initLinkDragAndDrop() {
+            const container = document.getElementById('linksContainer');
+            const linkItems = container.querySelectorAll('.link-item[draggable="true"]');
+
+            linkItems.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragend', handleDragEnd);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('dragenter', handleDragEnter);
+                item.addEventListener('dragleave', handleDragLeave);
+                item.addEventListener('drop', handleDrop);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedLink = this;
+            this.style.opacity = '0.4';
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.id);
+        }
+
+        function handleDragEnd(e) {
+            this.style.opacity = '1';
+            document.querySelectorAll('.link-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDragEnter(e) {
+            this.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        async function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+
+            if (draggedLink === this) return;
+
+            const container = document.getElementById('linksContainer');
+            const allItems = [...container.querySelectorAll('.link-item[draggable="true"]')];
+            const draggedIndex = allItems.indexOf(draggedLink);
+            const targetIndex = allItems.indexOf(this);
+
+            // Reorder in DOM
+            if (draggedIndex < targetIndex) {
+                this.parentNode.insertBefore(draggedLink, this.nextSibling);
+            } else {
+                this.parentNode.insertBefore(draggedLink, this);
+            }
+
+            // Get new order and save
+            const newOrder = [...container.querySelectorAll('.link-item[draggable="true"]')].map(item => parseInt(item.dataset.id));
+            
+            try {
+                const res = await fetch('/api/links/reorder', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ linkIds: newOrder })
+                });
+
+                if (res.ok) {
+                    // Update local links array order
+                    links.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
+                    showToast('Links reordered!', 'success');
+                } else {
+                    showToast('Failed to save order', 'error');
+                    renderLinks(); // Reset to original order
+                }
+            } catch (error) {
+                showToast('Failed to save order', 'error');
+                renderLinks();
+            }
         }
 
         // Navigation
@@ -2038,7 +2139,7 @@
             roblox: 'https://roblox.com/users/123456789',
             snapchat: 'https://snapchat.com/add/username',
             soundcloud: 'https://soundcloud.com/username',
-            spotify: 'https://open.spotify.com/artist/...',
+            spotify: 'https://open.spotify.com/...',
             steam: 'https://steamcommunity.com/id/username',
             tiktok: 'https://tiktok.com/@username',
             venmo: 'https://venmo.com/username',
