@@ -957,7 +957,7 @@
                     </div>
                 </div>
                 <div id="badgeUrlTab" style="display: none;">
-                    <input type="text" id="badgeImageUrl" placeholder="https://...">
+                <input type="text" id="badgeImageUrl" placeholder="https://...">
                 </div>
             </div>
             <div class="form-group">
@@ -1064,7 +1064,7 @@
             
             const btn = e.target.querySelector('button');
             const error = document.getElementById('loginError');
-
+            
             btn.classList.add('loading');
             btn.disabled = true;
             error.classList.remove('show');
@@ -1892,7 +1892,7 @@
                 const data = await res.json();
                 allBadges = data.badges;
 
-                document.getElementById('badgesList').innerHTML = data.badges.length > 0 ?
+                document.getElementById('badgesList').innerHTML = data.badges.length > 0 ? 
                     data.badges.map(badge => `
                         <div class="badge-item" style="margin-bottom: 8px;">
                             <img src="${escapeHtml(badge.image_url)}" alt="${escapeHtml(badge.name)}" onerror="this.style.display='none'">
@@ -1993,7 +1993,7 @@
             const name = document.getElementById('badgeName').value;
             const description = document.getElementById('badgeDescription').value;
             const createBtn = document.getElementById('createBadgeBtn');
-            
+
             if (!name) {
                 alert('Badge name is required');
                 return;
@@ -2048,14 +2048,14 @@
             createBtn.disabled = true;
 
             try {
-                await fetch('/api/admin/badges', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, image_url, description })
-                });
+            await fetch('/api/admin/badges', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, image_url, description })
+            });
 
-                closeCreateBadgeModal();
-                loadBadges();
+            closeCreateBadgeModal();
+            loadBadges();
             } catch (err) {
                 alert('Error creating badge');
             }

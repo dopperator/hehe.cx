@@ -978,14 +978,14 @@
             
             const btn = e.target.querySelector('button[type="submit"]');
             const error = document.getElementById('signupError');
-
+            
             // Check if terms are agreed
             if (!document.getElementById('agreeTerms').checked) {
                 error.textContent = 'You must agree to the Terms of Service and Privacy Policy';
                 error.classList.add('show');
                 return;
             }
-
+            
             signupPending = true;
             btn.classList.add('loading');
             btn.disabled = true;

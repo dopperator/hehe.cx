@@ -1804,7 +1804,7 @@
                 
                 // Update preview again after badges are loaded
                 updatePreview();
-
+                
                 document.getElementById('loadingOverlay').classList.add('hidden');
             } catch (error) {
                 console.error('Init error:', error);
@@ -2615,7 +2615,7 @@
 
         async function toggleBranding() {
             const hideBranding = document.getElementById('hideBranding').checked;
-
+            
             try {
                 const res = await fetch('/api/profile/branding', {
                     method: 'PUT',

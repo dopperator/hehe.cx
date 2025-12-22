@@ -1311,23 +1311,20 @@
             }
         }
 
-        // Chrome mobile autoplay policy fallback - resume on first touch after returning
-        let needsResumeOnTouch = false;
-
         // Handle page visibility change (for mobile browsers returning to the page)
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible') {
-                resumeMediaPlayback();
-            } else {
-                // Page is being hidden - flag for touch resume on return
-                needsResumeOnTouch = true;
+                // Small delay to let browser settle
+                setTimeout(resumeMediaPlayback, 100);
+                setTimeout(resumeMediaPlayback, 500);
             }
         });
 
         // Handle pageshow event (fires when page is shown, including back/forward navigation)
         // This is crucial for iOS Safari and mobile browsers using bfcache
         window.addEventListener('pageshow', function(event) {
-            resumeMediaPlayback();
+            setTimeout(resumeMediaPlayback, 100);
+            setTimeout(resumeMediaPlayback, 500);
         });
 
         // Handle page focus for desktop browsers
@@ -1336,25 +1333,28 @@
         });
 
         // Fallback: periodically check if video should be playing but isn't
-        // This catches edge cases on problematic mobile browsers
         setInterval(function() {
-            if (document.visibilityState === 'visible' && bgVideo && bgVideo.paused && !document.hidden) {
+            if (document.visibilityState === 'visible' && bgVideo && bgVideo.paused) {
                 bgVideo.play().catch(() => {});
             }
-        }, 1000);
+        }, 500);
 
-        // Touch/click fallback for Chrome mobile autoplay policy
+        // Touch/click ALWAYS tries to resume video if paused (for Chrome mobile autoplay policy)
         document.addEventListener('touchstart', function() {
-            if (needsResumeOnTouch) {
-                resumeMediaPlayback();
-                needsResumeOnTouch = false;
+            if (bgVideo && bgVideo.paused) {
+                bgVideo.play().catch(() => {});
+            }
+            if (bgAudio && !musicMuted && bgAudio.paused) {
+                bgAudio.play().catch(() => {});
             }
         }, { passive: true });
 
         document.addEventListener('click', function() {
-            if (needsResumeOnTouch) {
-                resumeMediaPlayback();
-                needsResumeOnTouch = false;
+            if (bgVideo && bgVideo.paused) {
+                bgVideo.play().catch(() => {});
+            }
+            if (bgAudio && !musicMuted && bgAudio.paused) {
+                bgAudio.play().catch(() => {});
             }
         });
 

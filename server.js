@@ -544,7 +544,7 @@ app.use(session({
     secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: {
+    cookie: { 
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,  // Prevents JavaScript access to cookie (XSS protection)
         maxAge: 30 * 24 * 60 * 60 * 1000,
@@ -585,7 +585,7 @@ const storage = USE_SUPABASE_STORAGE
 const fileFilter = (req, file, cb) => {
     const user = req.session.user;
     const isPremium = user?.is_premium;
-
+    
     const allowedTypes = {
         avatar: isPremium ? ['image/png', 'image/gif'] : ['image/png'],
         background: isPremium ? ['image/png', 'image/jpeg', 'image/gif'] : ['image/png', 'image/jpeg'],
@@ -870,7 +870,7 @@ app.get('/api/auth/status', async (req, res) => {
     try {
         if (req.session.user) {
             const user = await queryOne(
-                `SELECT id, email, username, display_name, bio, avatar, background,
+                `SELECT id, email, username, display_name, bio, avatar, background, 
                         background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding,
                         background_video, video_audio_default, repped_badge_id,
                         music_type, music_url, music_start, music_end, prefer_music_over_video,
@@ -924,7 +924,7 @@ app.post('/api/auth/signup', async (req, res) => {
         if (existing) {
             return res.status(400).json({ error: 'Email or username already taken' });
         }
-
+        
         // Check if a verification code was sent recently (60 second cooldown)
         const existingPending = await queryOne(
             'SELECT * FROM pending_verifications WHERE email = ?',
@@ -944,13 +944,13 @@ app.post('/api/auth/signup', async (req, res) => {
             }
             
             // Cooldown passed, delete old verification
-            await query('DELETE FROM pending_verifications WHERE email = ?', [email.toLowerCase()]);
+        await query('DELETE FROM pending_verifications WHERE email = ?', [email.toLowerCase()]);
         }
-
+        
         // Generate verification code and expiration (5 minutes)
         const code = generateVerificationCode();
         const hashedPassword = await bcrypt.hash(password, 10);
-
+        
         // Calculate expiration time
         let expiresAt;
         if (USE_POSTGRES) {
@@ -958,7 +958,7 @@ app.post('/api/auth/signup', async (req, res) => {
         } else {
             expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', '');
         }
-
+        
         // Store pending verification
         await insertAndReturn('pending_verifications', {
             email: email.toLowerCase(),
@@ -1041,7 +1041,7 @@ app.post('/api/auth/verify', async (req, res) => {
         
         // Delete pending verification
         await query('DELETE FROM pending_verifications WHERE email = ?', [email.toLowerCase()]);
-
+        
         // Regenerate session to prevent session fixation attacks
         req.session.regenerate((err) => {
             if (err) {
@@ -1050,14 +1050,14 @@ app.post('/api/auth/verify', async (req, res) => {
             }
             
             // Log the user in with new session
-            req.session.user = { id: user.id, is_premium: user.is_premium, is_admin: user.is_admin };
-            
+        req.session.user = { id: user.id, is_premium: user.is_premium, is_admin: user.is_admin };
+        
             req.session.save((err) => {
                 if (err) {
                     console.error('Session save error:', err);
                     return res.status(500).json({ error: 'Server error' });
                 }
-                res.json({ success: true, user });
+        res.json({ success: true, user });
             });
         });
     } catch (error) {
@@ -1136,13 +1136,13 @@ app.post('/api/auth/login', async (req, res) => {
         
         // Check if account is deactivated
         if (user.is_deactivated) {
-            return res.status(403).json({
+            return res.status(403).json({ 
                 error: 'Account deactivated',
                 deactivated: true,
                 reason: user.deactivation_reason || 'No reason provided'
             });
         }
-
+        
         // TODO: Future 2FA implementation
         // When adding email 2FA for login, add rate limiting here similar to admin login:
         // 1. Check for existing verification in login_verifications table
@@ -1152,10 +1152,10 @@ app.post('/api/auth/login', async (req, res) => {
 
         // Regenerate session to prevent session fixation attacks
         const userData = {
-            id: user.id,
-            email: user.email,
-            username: user.username,
-            display_name: user.display_name
+                id: user.id,
+                email: user.email,
+                username: user.username,
+                display_name: user.display_name
         };
         
         req.session.regenerate((err) => {
@@ -1451,7 +1451,7 @@ app.put('/api/profile/music', requireAuth, async (req, res) => {
 app.put('/api/profile/display', requireAuth, async (req, res) => {
     try {
         const { click_to_enter, embed_position, hide_share_button } = req.body;
-
+        
         // Validate embed_position
         const validPositions = [
             'bottom-right', 'bottom-left', 'top-right', 'top-left',
@@ -1468,15 +1468,15 @@ app.put('/api/profile/display', requireAuth, async (req, res) => {
                 return res.status(403).json({ error: 'Premium subscription required to hide share button' });
             }
         }
-
+        
         const updates = [];
         const values = [];
-
+        
         if (click_to_enter !== undefined) {
             updates.push('click_to_enter = ?');
             values.push(USE_POSTGRES ? click_to_enter : (click_to_enter ? 1 : 0));
         }
-
+        
         if (embed_position !== undefined) {
             updates.push('embed_position = ?');
             values.push(embed_position);
@@ -1486,12 +1486,12 @@ app.put('/api/profile/display', requireAuth, async (req, res) => {
             updates.push('hide_share_button = ?');
             values.push(USE_POSTGRES ? hide_share_button : (hide_share_button ? 1 : 0));
         }
-
+        
         if (updates.length > 0) {
             values.push(req.session.user.id);
             await query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
         }
-
+        
         res.json({ success: true });
     } catch (error) {
         console.error('Update display settings error:', error);
@@ -1671,7 +1671,7 @@ app.post('/api/links', requireAuth, async (req, res) => {
     try {
         const { platform, url } = req.body;
         const userId = req.session.user.id;
-
+        
         if (!platform || !url) {
             return res.status(400).json({ error: 'Platform and URL are required' });
         }
@@ -1690,18 +1690,18 @@ app.post('/api/links', requireAuth, async (req, res) => {
         if (linkCount && linkCount.count >= MAX_LINKS_PER_USER) {
             return res.status(400).json({ error: `Maximum of ${MAX_LINKS_PER_USER} links allowed` });
         }
-
+        
         // Validate URL matches the platform
         if (!validatePlatformUrl(platform, url)) {
             return res.status(400).json({ error: `URL must be a valid ${platform} link` });
         }
-
+        
         const maxResult = await queryOne(
             'SELECT COALESCE(MAX(display_order), 0) as max FROM links WHERE user_id = ?',
             [userId]
         );
         const newOrder = (maxResult?.max || 0) + 1;
-
+        
         const link = await insertAndReturn('links', {
             user_id: userId,
             platform,
@@ -1711,7 +1711,7 @@ app.post('/api/links', requireAuth, async (req, res) => {
 
         // Update cooldown
         linkCreationCooldowns.set(userId, Date.now());
-
+        
         res.json({ success: true, link });
     } catch (error) {
         console.error('Add link error:', error);
@@ -1820,17 +1820,17 @@ const requireAdmin = async (req, res, next) => {
 app.post('/api/admin/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-
+        
         const user = await queryOne('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
-
+        
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
-
+        
         if (!user.is_admin) {
             return res.status(403).json({ error: 'Not authorized' });
         }
-
+        
         // Check if a verification code was sent recently (60 second cooldown)
         const existingVerification = await queryOne(
             'SELECT * FROM admin_verifications WHERE admin_id = ?',
@@ -1850,9 +1850,9 @@ app.post('/api/admin/login', async (req, res) => {
             }
             
             // Cooldown passed, delete old verification
-            await query('DELETE FROM admin_verifications WHERE admin_id = ?', [user.id]);
+        await query('DELETE FROM admin_verifications WHERE admin_id = ?', [user.id]);
         }
-
+        
         // Generate verification code
         const code = generateVerificationCode();
         let expiresAt;
@@ -1861,7 +1861,7 @@ app.post('/api/admin/login', async (req, res) => {
         } else {
             expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', '');
         }
-
+        
         await insertAndReturn('admin_verifications', {
             admin_id: user.id,
             code: code,
@@ -1919,7 +1919,7 @@ app.post('/api/admin/verify', async (req, res) => {
         
         // Delete verification
         await query('DELETE FROM admin_verifications WHERE admin_id = ?', [adminId]);
-
+        
         // Regenerate session to prevent session fixation attacks
         const adminData = { id: admin.id, email: admin.email, username: admin.username };
         
@@ -1929,8 +1929,8 @@ app.post('/api/admin/verify', async (req, res) => {
                 return res.status(500).json({ error: 'Server error' });
             }
             
-            req.session.admin = { id: admin.id, email: admin.email };
-            
+        req.session.admin = { id: admin.id, email: admin.email };
+        
             req.session.save((err) => {
                 if (err) {
                     console.error('Session save error:', err);
@@ -2472,17 +2472,17 @@ app.post('/api/admin/badges/upload', requireAdmin, upload.single('badge'), async
 app.post('/api/admin/badges', requireAdmin, async (req, res) => {
     try {
         const { name, image_url, description } = req.body;
-
+        
         if (!name || !image_url) {
             return res.status(400).json({ error: 'Name and image URL are required' });
         }
-
+        
         const badge = await insertAndReturn('badges', {
             name,
             image_url,
             description: description || null
         });
-
+        
         res.json({ success: true, badge });
     } catch (error) {
         console.error('Create badge error:', error);
