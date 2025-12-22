@@ -907,22 +907,8 @@
                     reppedBadgeEl.style.display = 'block';
                 }
 
-                // Fetch and display badges
-                try {
-                    const badgesRes = await fetch(`/api/users/${username}/badges`);
-                    const badgesData = await badgesRes.json();
-                    
-                    if (badgesData.badges && badgesData.badges.length > 0) {
-                        const badgesContainer = document.getElementById('userBadges');
-                        badgesContainer.innerHTML = badgesData.badges.map(badge => `
-                            <div class="user-badge badge-tooltip" data-tooltip="${badge.name}">
-                                <img src="${badge.image_url}" alt="${badge.name}" onerror="this.parentElement.style.display='none'">
-                            </div>
-                        `).join('');
-                    }
-                } catch (e) {
-                    console.error('Error loading badges:', e);
-                }
+                // Note: All badges are not displayed publicly
+                // Only the repped badge (selected by user) is shown above
 
                 // User ID
                 if (user.show_userid) {

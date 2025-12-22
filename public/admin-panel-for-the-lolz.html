@@ -1017,6 +1017,14 @@
         let allBadges = [];
         let confirmCallback = null;
 
+        // HTML escape function to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // Check admin status on load
         fetch('/api/admin/status')
             .then(res => res.json())
@@ -1027,12 +1035,19 @@
             });
 
         // Admin login form
+        let adminLoginPending = false;
         document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Prevent double submission
+            if (adminLoginPending) return;
+            adminLoginPending = true;
+            
             const btn = e.target.querySelector('button');
             const error = document.getElementById('loginError');
-            
+
             btn.classList.add('loading');
+            btn.disabled = true;
             error.classList.remove('show');
 
             try {
@@ -1055,6 +1070,20 @@
                 } else {
                     error.textContent = data.error;
                     error.classList.add('show');
+                    
+                    // If cooldown error, show countdown
+                    if (data.cooldown) {
+                        let remaining = data.cooldown;
+                        const interval = setInterval(() => {
+                            remaining--;
+                            if (remaining <= 0) {
+                                clearInterval(interval);
+                                error.classList.remove('show');
+                            } else {
+                                error.textContent = `Please wait ${remaining} seconds before requesting another code`;
+                            }
+                        }, 1000);
+                    }
                 }
             } catch (err) {
                 error.textContent = 'Connection error';
@@ -1062,6 +1091,8 @@
             }
 
             btn.classList.remove('loading');
+            btn.disabled = false;
+            adminLoginPending = false;
         });
 
         // Code input handling
@@ -1267,12 +1298,12 @@
                 document.getElementById('userList').innerHTML = data.users.map(user => `
                     <div class="user-item ${user.is_deactivated ? 'deactivated' : ''}" onclick="loadUser(${user.id})">
                         <div class="user-name">
-                            ${user.display_name || user.username}
+                            ${escapeHtml(user.display_name || user.username)}
                             ${user.is_premium ? '<span class="badge-pill badge-premium">PRO</span>' : ''}
                             ${user.is_admin ? '<span class="badge-pill badge-admin">ADMIN</span>' : ''}
                             ${user.is_deactivated ? '<span class="badge-pill badge-deactivated">DEACTIVATED</span>' : ''}
                         </div>
-                        <div class="user-meta">ID: ${user.id} · @${user.username}</div>
+                        <div class="user-meta">ID: ${user.id} · @${escapeHtml(user.username)}</div>
                     </div>
                 `).join('');
             } catch (err) {
@@ -1303,21 +1334,28 @@
             const { user, links, badges } = data;
             const userBadgeIds = badges.map(b => b.id);
 
+            // Escape user-generated content to prevent XSS
+            const safeDisplayName = escapeHtml(user.display_name || user.username);
+            const safeUsername = escapeHtml(user.username);
+            const safeEmail = escapeHtml(user.email);
+            const safeBio = escapeHtml(user.bio || '');
+            const safeDeactivationReason = escapeHtml(user.deactivation_reason || 'No reason provided');
+
             document.getElementById('userDetails').innerHTML = `
                 ${user.is_deactivated ? `
                     <div class="deactivation-warning">
                         <h4>⚠️ Account Deactivated</h4>
-                        <p><strong>Reason:</strong> ${user.deactivation_reason || 'No reason provided'}</p>
+                        <p><strong>Reason:</strong> ${safeDeactivationReason}</p>
                     </div>
                 ` : ''}
 
                 <div class="detail-header">
                     <img src="${user.avatar || '/src/logo.png'}" class="detail-avatar" onerror="this.src='/src/logo.png'">
                     <div class="detail-info">
-                        <h2>${user.display_name || user.username}</h2>
-                        <div class="username">@${user.username}</div>
+                        <h2>${safeDisplayName}</h2>
+                        <div class="username">@${safeUsername}</div>
                     </div>
-                    <a href="/${user.username}" target="_blank" class="btn btn-ghost btn-sm">View Profile →</a>
+                    <a href="/${encodeURIComponent(user.username)}" target="_blank" class="btn btn-ghost btn-sm">View Profile →</a>
                 </div>
 
                 <div class="section">
@@ -1329,11 +1367,11 @@
                         </div>
                         <div class="info-item">
                             <label>Username</label>
-                            <div class="value">@${user.username}</div>
+                            <div class="value">@${safeUsername}</div>
                         </div>
                         <div class="info-item">
                             <label>Email</label>
-                            <div class="value">${user.email}</div>
+                            <div class="value">${safeEmail}</div>
                         </div>
                         <div class="info-item">
                             <label>Signup IP</label>
@@ -1358,13 +1396,13 @@
                     <div class="form-group">
                         <label>Display Name</label>
                         <div style="display: flex; gap: 10px;">
-                            <input type="text" id="editDisplayName" value="${user.display_name || ''}" style="flex: 1;">
+                            <input type="text" id="editDisplayName" value="${safeDisplayName}" style="flex: 1;">
                             <button class="btn btn-purple btn-sm" onclick="saveDisplayName()">Save</button>
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Bio</label>
-                        <textarea id="editBio">${user.bio || ''}</textarea>
+                        <textarea id="editBio">${safeBio}</textarea>
                         <button class="btn btn-purple btn-sm" style="margin-top: 8px;" onclick="saveBio()">Save Bio</button>
                     </div>
                     <div class="form-group">
@@ -1461,9 +1499,9 @@
                         <div class="links-list">
                             ${links.map(link => `
                                 <div class="link-item">
-                                    <span class="platform">${link.platform}</span>
-                                    <span class="url">${link.url}</span>
-                                    <button class="btn btn-ghost btn-sm" onclick="editLink(${user.id}, ${link.id}, '${link.platform}', '${link.url.replace(/'/g, "\\'")}')">Edit</button>
+                                    <span class="platform">${escapeHtml(link.platform)}</span>
+                                    <span class="url">${escapeHtml(link.url)}</span>
+                                    <button class="btn btn-ghost btn-sm" onclick="editLink(${user.id}, ${link.id}, '${escapeHtml(link.platform)}', '${escapeHtml(link.url).replace(/'/g, "\\'")}')">Edit</button>
                                 </div>
                             `).join('')}
                         </div>
@@ -1477,8 +1515,8 @@
                         <div class="badges-grid">
                             ${badges.map(badge => `
                                 <div class="badge-item">
-                                    <img src="${badge.image_url}" alt="${badge.name}" onerror="this.style.display='none'">
-                                    <span class="badge-name">${badge.name}</span>
+                                    <img src="${escapeHtml(badge.image_url)}" alt="${escapeHtml(badge.name)}" onerror="this.style.display='none'">
+                                    <span class="badge-name">${escapeHtml(badge.name)}</span>
                                     <button class="btn btn-ghost btn-sm" onclick="removeBadge(${user.id}, ${badge.id})">×</button>
                                 </div>
                             `).join('')}
@@ -1490,8 +1528,8 @@
                         <div class="available-badges">
                             ${allBadges.filter(b => !userBadgeIds.includes(b.id)).map(badge => `
                                 <div class="available-badge" onclick="grantBadge(${user.id}, ${badge.id})">
-                                    <img src="${badge.image_url}" alt="${badge.name}" onerror="this.style.display='none'">
-                                    <span>${badge.name}</span>
+                                    <img src="${escapeHtml(badge.image_url)}" alt="${escapeHtml(badge.name)}" onerror="this.style.display='none'">
+                                    <span>${escapeHtml(badge.name)}</span>
                                 </div>
                             `).join('') || '<p style="color: var(--text-muted);">No badges available to grant</p>'}
                         </div>
@@ -1835,13 +1873,13 @@
                 const data = await res.json();
                 allBadges = data.badges;
 
-                document.getElementById('badgesList').innerHTML = data.badges.length > 0 ? 
+                document.getElementById('badgesList').innerHTML = data.badges.length > 0 ?
                     data.badges.map(badge => `
                         <div class="badge-item" style="margin-bottom: 8px;">
-                            <img src="${badge.image_url}" alt="${badge.name}" onerror="this.style.display='none'">
+                            <img src="${escapeHtml(badge.image_url)}" alt="${escapeHtml(badge.name)}" onerror="this.style.display='none'">
                             <div style="flex: 1;">
-                                <div class="badge-name">${badge.name}</div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">${badge.description || 'No description'}</div>
+                                <div class="badge-name">${escapeHtml(badge.name)}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(badge.description || 'No description')}</div>
                             </div>
                             <button class="btn btn-ghost btn-sm" onclick="deleteBadge(${badge.id})">×</button>
                         </div>

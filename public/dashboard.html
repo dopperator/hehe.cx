@@ -1579,6 +1579,14 @@
         let selectedPlatform = null;
         let userBadges = [];
 
+        // HTML escape function to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // URL validation patterns for platforms
         const platformPatterns = {
             bluesky: /^https?:\/\/(www\.)?(bsky\.app|bsky\.social)\//i,
