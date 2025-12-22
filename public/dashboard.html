@@ -1615,6 +1615,17 @@
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
+
+                                <div class="setting-item">
+                                    <div>
+                                        <div class="setting-label">Hide Share Button</div>
+                                        <div style="font-size: 0.85rem; color: var(--text-muted);">Remove the share button from your profile page</div>
+                                    </div>
+                                    <label class="toggle">
+                                        <input type="checkbox" id="hideShareButton" onchange="toggleShareButton()">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1855,6 +1866,7 @@
                 document.getElementById('premiumUpgrade').style.display = 'none';
                 document.getElementById('premiumActive').style.display = 'block';
                 document.getElementById('hideBranding').checked = currentUser.hide_branding;
+                document.getElementById('hideShareButton').checked = currentUser.hide_share_button;
                 document.getElementById('premiumNavItem').innerHTML = `
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
@@ -2603,7 +2615,7 @@
 
         async function toggleBranding() {
             const hideBranding = document.getElementById('hideBranding').checked;
-            
+
             try {
                 const res = await fetch('/api/profile/branding', {
                     method: 'PUT',
@@ -2624,6 +2636,33 @@
             } catch (error) {
                 // Revert checkbox on error
                 document.getElementById('hideBranding').checked = !hideBranding;
+                showToast('Failed to update', 'error');
+            }
+        }
+
+        async function toggleShareButton() {
+            const hideShareButton = document.getElementById('hideShareButton').checked;
+
+            try {
+                const res = await fetch('/api/profile/display', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hide_share_button: hideShareButton })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    currentUser.hide_share_button = hideShareButton;
+                    showToast(hideShareButton ? 'Share button hidden' : 'Share button visible', 'success');
+                } else {
+                    // Revert checkbox on error
+                    document.getElementById('hideShareButton').checked = !hideShareButton;
+                    showToast(data.error || 'Failed to update', 'error');
+                }
+            } catch (error) {
+                // Revert checkbox on error
+                document.getElementById('hideShareButton').checked = !hideShareButton;
                 showToast('Failed to update', 'error');
             }
         }

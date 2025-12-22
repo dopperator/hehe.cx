@@ -119,6 +119,7 @@ async function initDatabase() {
                     prefer_music_over_video BOOLEAN DEFAULT false,
                     click_to_enter BOOLEAN DEFAULT false,
                     embed_position VARCHAR(30) DEFAULT 'bottom-right',
+                    hide_share_button BOOLEAN DEFAULT false,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
 
@@ -199,6 +200,7 @@ async function initDatabase() {
                 await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS prefer_music_over_video BOOLEAN DEFAULT false`);
                 await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS click_to_enter BOOLEAN DEFAULT false`);
                 await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS embed_position VARCHAR(30) DEFAULT 'bottom-right'`);
+                await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_share_button BOOLEAN DEFAULT false`);
             } catch (e) {
                 // Columns may already exist
             }
@@ -868,11 +870,11 @@ app.get('/api/auth/status', async (req, res) => {
     try {
         if (req.session.user) {
             const user = await queryOne(
-                `SELECT id, email, username, display_name, bio, avatar, background, 
+                `SELECT id, email, username, display_name, bio, avatar, background,
                         background_type, gradient_start, gradient_end, show_userid, is_premium, hide_branding,
                         background_video, video_audio_default, repped_badge_id,
                         music_type, music_url, music_start, music_end, prefer_music_over_video,
-                        click_to_enter, embed_position 
+                        click_to_enter, embed_position, hide_share_button
                  FROM users WHERE id = ?`,
                 [req.session.user.id]
             );
@@ -1445,11 +1447,11 @@ app.put('/api/profile/music', requireAuth, async (req, res) => {
     }
 });
 
-// Update profile display settings (click to enter, embed position)
+// Update profile display settings (click to enter, embed position, hide share button)
 app.put('/api/profile/display', requireAuth, async (req, res) => {
     try {
-        const { click_to_enter, embed_position } = req.body;
-        
+        const { click_to_enter, embed_position, hide_share_button } = req.body;
+
         // Validate embed_position
         const validPositions = [
             'bottom-right', 'bottom-left', 'top-right', 'top-left',
@@ -1458,25 +1460,38 @@ app.put('/api/profile/display', requireAuth, async (req, res) => {
         if (embed_position && !validPositions.includes(embed_position)) {
             return res.status(400).json({ error: 'Invalid embed position' });
         }
-        
+
+        // Check if user is premium for hide_share_button
+        if (hide_share_button !== undefined) {
+            const user = await queryOne('SELECT is_premium FROM users WHERE id = ?', [req.session.user.id]);
+            if (!user?.is_premium) {
+                return res.status(403).json({ error: 'Premium subscription required to hide share button' });
+            }
+        }
+
         const updates = [];
         const values = [];
-        
+
         if (click_to_enter !== undefined) {
             updates.push('click_to_enter = ?');
             values.push(USE_POSTGRES ? click_to_enter : (click_to_enter ? 1 : 0));
         }
-        
+
         if (embed_position !== undefined) {
             updates.push('embed_position = ?');
             values.push(embed_position);
         }
-        
+
+        if (hide_share_button !== undefined) {
+            updates.push('hide_share_button = ?');
+            values.push(USE_POSTGRES ? hide_share_button : (hide_share_button ? 1 : 0));
+        }
+
         if (updates.length > 0) {
             values.push(req.session.user.id);
             await query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
         }
-        
+
         res.json({ success: true });
     } catch (error) {
         console.error('Update display settings error:', error);
@@ -2548,8 +2563,8 @@ app.get('/api/profile/:username', async (req, res) => {
                     u.background_type, u.gradient_start, u.gradient_end, u.show_userid, u.is_premium, u.hide_branding,
                     u.background_video, u.video_audio_default, u.repped_badge_id,
                     u.music_type, u.music_url, u.music_start, u.music_end, u.prefer_music_over_video,
-                    u.click_to_enter, u.embed_position,
-                    b.name as repped_badge_name, b.image_url as repped_badge_image
+                    u.click_to_enter, u.embed_position, u.hide_share_button,
+                    b.name as repped_badge_name, b.image_url as repped_badge_image, b.description as repped_badge_description
              FROM users u
              LEFT JOIN badges b ON u.repped_badge_id = b.id
              WHERE u.username = ?`,
