@@ -1038,10 +1038,7 @@
 
         // HTML escape function to prevent XSS
         function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+            return String(text ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
 
         // Check admin status on load
@@ -1369,7 +1366,7 @@
                 ` : ''}
 
                 <div class="detail-header">
-                    <img src="${user.avatar || '/src/logo.png'}" class="detail-avatar" onerror="this.src='/src/logo.png'">
+                    <img src="${escapeHtml(user.avatar || '/src/logo.png')}" class="detail-avatar" onerror="this.src='/src/logo.png'">
                     <div class="detail-info">
                         <h2>${safeDisplayName}</h2>
                         <div class="username">@${safeUsername}</div>
@@ -1394,7 +1391,7 @@
                         </div>
                         <div class="info-item">
                             <label>Signup IP</label>
-                            <div class="value">${user.signup_ip || 'Unknown'}</div>
+                            <div class="value">${escapeHtml(user.signup_ip || 'Unknown')}</div>
                         </div>
                         <div class="info-item">
                             <label>Created</label>
@@ -1427,7 +1424,7 @@
                     <div class="form-group">
                         <label>Avatar URL</label>
                         <div style="display: flex; gap: 10px;">
-                            <input type="text" id="editAvatarUrl" value="${user.avatar || ''}" placeholder="https://..." style="flex: 1;">
+                            <input type="text" id="editAvatarUrl" value="${escapeHtml(user.avatar || '')}" placeholder="https://..." style="flex: 1;">
                             <button class="btn btn-purple btn-sm" onclick="saveAvatarUrl()">Save</button>
                             <button class="btn btn-ghost btn-sm" onclick="removeAvatar(${user.id})" ${!user.avatar ? 'disabled' : ''}>Remove</button>
                         </div>
@@ -1448,9 +1445,9 @@
                         <div class="form-group">
                             <label>Gradient Colors</label>
                             <div style="display: flex; gap: 10px; align-items: center;">
-                                <input type="color" id="editGradientStart" value="${user.gradient_start || '#667eea'}" style="width: 60px; height: 36px;">
+                                <input type="color" id="editGradientStart" value="${escapeHtml(user.gradient_start || '#667eea')}" style="width: 60px; height: 36px;">
                                 <span>→</span>
-                                <input type="color" id="editGradientEnd" value="${user.gradient_end || '#764ba2'}" style="width: 60px; height: 36px;">
+                                <input type="color" id="editGradientEnd" value="${escapeHtml(user.gradient_end || '#764ba2')}" style="width: 60px; height: 36px;">
                                 <button class="btn btn-purple btn-sm" onclick="saveGradient()">Save</button>
                             </div>
                         </div>
@@ -1459,7 +1456,7 @@
                         <div class="form-group">
                             <label>Background Image URL</label>
                             <div style="display: flex; gap: 10px;">
-                                <input type="text" id="editBackgroundUrl" value="${user.background || ''}" placeholder="https://..." style="flex: 1;">
+                                <input type="text" id="editBackgroundUrl" value="${escapeHtml(user.background || '')}" placeholder="https://..." style="flex: 1;">
                                 <button class="btn btn-purple btn-sm" onclick="saveBackgroundUrl()">Save</button>
                             </div>
                         </div>
@@ -1468,7 +1465,7 @@
                         <div class="form-group">
                             <label>Background Video URL</label>
                             <div style="display: flex; gap: 10px;">
-                                <input type="text" id="editVideoUrl" value="${user.background_video || ''}" placeholder="https://..." style="flex: 1;">
+                                <input type="text" id="editVideoUrl" value="${escapeHtml(user.background_video || '')}" placeholder="https://..." style="flex: 1;">
                                 <button class="btn btn-purple btn-sm" onclick="saveVideoUrl()">Save</button>
                             </div>
                         </div>
@@ -1491,16 +1488,16 @@
                     </div>
                     <div class="form-group">
                         <label>Music URL</label>
-                        <input type="text" id="editMusicUrl" value="${user.music_url || ''}" placeholder="https://...">
+                        <input type="text" id="editMusicUrl" value="${escapeHtml(user.music_url || '')}" placeholder="https://...">
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <div class="form-group" style="flex: 1;">
                             <label>Start (seconds)</label>
-                            <input type="number" id="editMusicStart" value="${user.music_start || 0}" min="0">
+                            <input type="number" id="editMusicStart" value="${parseInt(user.music_start, 10) || 0}" min="0">
                         </div>
                         <div class="form-group" style="flex: 1;">
                             <label>End (seconds)</label>
-                            <input type="number" id="editMusicEnd" value="${user.music_end || 0}" min="0">
+                            <input type="number" id="editMusicEnd" value="${parseInt(user.music_end, 10) || 0}" min="0">
                         </div>
                     </div>
                     <div class="form-group">
@@ -1520,7 +1517,7 @@
                                 <div class="link-item">
                                     <span class="platform">${escapeHtml(link.platform)}</span>
                                     <span class="url">${escapeHtml(link.url)}</span>
-                                    <button class="btn btn-ghost btn-sm" onclick="editLink(${user.id}, ${link.id}, '${escapeHtml(link.platform)}', '${escapeHtml(link.url).replace(/'/g, "\\'")}')">Edit</button>
+                                    <button class="btn btn-ghost btn-sm" onclick="editLink(${user.id}, ${link.id})">Edit</button>
                                 </div>
                             `).join('')}
                         </div>
@@ -1802,9 +1799,11 @@
         }
 
         // Link editing
-        function editLink(userId, linkId, platform, url) {
-            document.getElementById('editLinkPlatform').value = platform;
-            document.getElementById('editLinkUrl').value = url;
+        function editLink(userId, linkId) {
+            const link = currentUser.links.find(l => l.id === linkId);
+            if (!link) return;
+            document.getElementById('editLinkPlatform').value = link.platform;
+            document.getElementById('editLinkUrl').value = link.url;
             document.getElementById('editLinkId').value = linkId;
             document.getElementById('editLinkUserId').value = userId;
             document.getElementById('editLinkModal').classList.add('active');

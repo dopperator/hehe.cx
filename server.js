@@ -256,6 +256,7 @@ async function initDatabase() {
                     prefer_music_over_video INTEGER DEFAULT 0,
                     click_to_enter INTEGER DEFAULT 0,
                     embed_position TEXT DEFAULT 'bottom-right',
+                    hide_share_button INTEGER DEFAULT 0,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (repped_badge_id) REFERENCES badges(id) ON DELETE SET NULL
                 );
@@ -333,7 +334,8 @@ async function initDatabase() {
                 'ALTER TABLE users ADD COLUMN music_end INTEGER DEFAULT 0',
                 'ALTER TABLE users ADD COLUMN prefer_music_over_video INTEGER DEFAULT 0',
                 'ALTER TABLE users ADD COLUMN click_to_enter INTEGER DEFAULT 0',
-                "ALTER TABLE users ADD COLUMN embed_position TEXT DEFAULT 'bottom-right'"
+                "ALTER TABLE users ADD COLUMN embed_position TEXT DEFAULT 'bottom-right'",
+                'ALTER TABLE users ADD COLUMN hide_share_button INTEGER DEFAULT 0'
             ];
             
             for (const migration of migrations) {
@@ -585,10 +587,17 @@ const storage = USE_SUPABASE_STORAGE
             cb(null, folder);
         },
         filename: (req, file, cb) => {
-            const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+            const uniqueName = `${uuidv4()}${safeExt(file.originalname)}`;
             cb(null, uniqueName);
         }
     });
+
+// Extension from a user-supplied filename, reduced to a short alphanumeric suffix so it is
+// safe in storage keys, file paths and the URLs built from them.
+function safeExt(filename) {
+    const ext = path.extname(filename || '').toLowerCase();
+    return /^\.[a-z0-9]{1,8}$/.test(ext) ? ext : '';
+}
 
 const fileFilter = (req, file, cb) => {
     const user = req.session.user;
@@ -775,13 +784,10 @@ async function cleanupExpiredVerifications() {
 // Run cleanup every 10 minutes
 setInterval(cleanupExpiredVerifications, 10 * 60 * 1000);
 
-// Get client IP address
+// Get client IP address. req.ip honours 'trust proxy' (set in production), so it is the
+// address the reverse proxy saw, not the client-supplied first X-Forwarded-For entry.
 function getClientIP(req) {
-    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
-           req.headers['x-real-ip'] || 
-           req.socket?.remoteAddress || 
-           req.ip || 
-           'unknown';
+    return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
 // Send admin verification email
@@ -860,10 +866,13 @@ const musicPatterns = {
 };
 
 function validatePlatformUrl(platform, url) {
-    const pattern = platformPatterns[platform.toLowerCase()];
-    if (!pattern) return true; // Unknown platform, allow any URL
+    const pattern = platformPatterns[String(platform).toLowerCase()];
+    if (!pattern) return false; // Only the supported platforms
     return pattern.test(url);
 }
+
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+const BACKGROUND_TYPES = ['gradient', 'image', 'video'];
 
 function validateMusicUrl(type, url) {
     const pattern = musicPatterns[type];
@@ -1198,6 +1207,14 @@ app.post('/api/auth/logout', (req, res) => {
 app.put('/api/profile', requireAuth, async (req, res) => {
     try {
         const { display_name, bio, background_type, gradient_start, gradient_end, show_userid, video_audio_default } = req.body;
+        for (const color of [gradient_start, gradient_end]) {
+            if (color != null && !HEX_COLOR.test(color)) {
+                return res.status(400).json({ error: 'Gradient colors must be hex like #667eea' });
+            }
+        }
+        if (background_type != null && !BACKGROUND_TYPES.includes(background_type)) {
+            return res.status(400).json({ error: 'Invalid background type' });
+        }
         const showUseridValue = USE_POSTGRES ? show_userid : (show_userid ? 1 : 0);
         const videoAudioValue = USE_POSTGRES ? video_audio_default : (video_audio_default ? 1 : 0);
         
@@ -1248,7 +1265,7 @@ app.post('/api/profile/avatar', requireAuth, checkFileSize('avatar'), async (req
             }
             
             // Upload to Supabase Storage
-            const fileName = `${req.session.user.id}/${uuidv4()}${path.extname(req.file.originalname)}`;
+            const fileName = `${req.session.user.id}/${uuidv4()}${safeExt(req.file.originalname)}`;
             avatarUrl = await uploadToSupabase('avatars', fileName, req.file.buffer, req.file.mimetype);
         } else {
             // Local storage
@@ -1285,7 +1302,7 @@ app.post('/api/profile/background', requireAuth, checkFileSize('background'), as
             }
             
             // Upload to Supabase Storage
-            const fileName = `${req.session.user.id}/${uuidv4()}${path.extname(req.file.originalname)}`;
+            const fileName = `${req.session.user.id}/${uuidv4()}${safeExt(req.file.originalname)}`;
             backgroundUrl = await uploadToSupabase('backgrounds', fileName, req.file.buffer, req.file.mimetype);
         } else {
             // Local storage
@@ -1361,7 +1378,7 @@ app.post('/api/profile/video', requireAuth, checkFileSize('video'), async (req, 
             }
             
             // Upload to Supabase Storage
-            const fileName = `${req.session.user.id}/${uuidv4()}${path.extname(req.file.originalname)}`;
+            const fileName = `${req.session.user.id}/${uuidv4()}${safeExt(req.file.originalname)}`;
             videoUrl = await uploadToSupabase('videos', fileName, req.file.buffer, req.file.mimetype);
         } else {
             // Local storage
@@ -1436,7 +1453,13 @@ app.put('/api/profile/music', requireAuth, async (req, res) => {
         }
         
         const preferMusicValue = USE_POSTGRES ? prefer_music_over_video : (prefer_music_over_video ? 1 : 0);
-        
+        // A URL is only stored for the streaming types it was validated against; uploaded files
+        // set music_url through /api/profile/audio.
+        const isStreaming = ['youtube', 'spotify', 'soundcloud'].includes(music_type);
+        const musicUrlValue = isStreaming ? music_url : undefined;
+        const musicStartValue = Math.max(0, parseInt(music_start, 10) || 0);
+        const musicEndValue = Math.max(0, parseInt(music_end, 10) || 0);
+
         await query(
             `UPDATE users SET 
                 music_type = COALESCE(?, music_type),
@@ -1445,7 +1468,7 @@ app.put('/api/profile/music', requireAuth, async (req, res) => {
                 music_end = COALESCE(?, music_end),
                 prefer_music_over_video = COALESCE(?, prefer_music_over_video)
             WHERE id = ?`,
-            [music_type, music_url, music_start || 0, music_end || 0, preferMusicValue, req.session.user.id]
+            [music_type, musicUrlValue, musicStartValue, musicEndValue, preferMusicValue, req.session.user.id]
         );
         
         res.json({ success: true });
@@ -1538,7 +1561,7 @@ app.post('/api/profile/audio', requireAuth, checkFileSize('audio'), async (req, 
             }
             
             // Upload to Supabase Storage
-            const fileName = `${req.session.user.id}/${uuidv4()}${path.extname(req.file.originalname)}`;
+            const fileName = `${req.session.user.id}/${uuidv4()}${safeExt(req.file.originalname)}`;
             audioUrl = await uploadToSupabase('audio', fileName, req.file.buffer, req.file.mimetype);
         } else {
             // Local storage - delete old file
@@ -1744,7 +1767,7 @@ app.put('/api/links/:id', requireAuth, async (req, res) => {
         // Validate URL matches the platform (use new platform or existing)
         const targetPlatform = platform || link.platform;
         const targetUrl = url || link.url;
-        if (url && !validatePlatformUrl(targetPlatform, targetUrl)) {
+        if ((url || platform) && !validatePlatformUrl(targetPlatform, targetUrl)) {
             return res.status(400).json({ error: `URL must be a valid ${targetPlatform} link` });
         }
         
@@ -2455,7 +2478,7 @@ app.post('/api/admin/badges/upload', requireAdmin, upload.single('badge'), async
 
         if (USE_SUPABASE_STORAGE) {
             // Upload to Supabase Storage in badges bucket
-            const fileName = `badges/${uuidv4()}${path.extname(req.file.originalname)}`;
+            const fileName = `badges/${uuidv4()}${safeExt(req.file.originalname)}`;
             imageUrl = await uploadToSupabase('avatars', fileName, req.file.buffer, req.file.mimetype);
         } else {
             // Local storage - save to uploads/badges folder
@@ -2463,7 +2486,7 @@ app.post('/api/admin/badges/upload', requireAdmin, upload.single('badge'), async
             if (!fs.existsSync(badgesDir)) {
                 fs.mkdirSync(badgesDir, { recursive: true });
             }
-            const fileName = `${uuidv4()}${path.extname(req.file.originalname)}`;
+            const fileName = `${uuidv4()}${safeExt(req.file.originalname)}`;
             const filePath = path.join(badgesDir, fileName);
             fs.writeFileSync(filePath, req.file.buffer);
             imageUrl = '/' + filePath.replace(/\\/g, '/');

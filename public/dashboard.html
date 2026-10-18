@@ -1694,10 +1694,7 @@
 
         // HTML escape function to prevent XSS
         function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+            return String(text ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
 
         // URL validation patterns for platforms
@@ -2029,8 +2026,8 @@
                     
                     html += userBadges.map(badge => `
                         <div class="badge-option ${currentUser.repped_badge_id === badge.id ? 'selected' : ''}" 
-                             onclick="setReppedBadge(${badge.id})" title="${badge.name}">
-                            <img src="${badge.image_url}" alt="${badge.name}" onerror="this.parentElement.style.display='none'">
+                             onclick="setReppedBadge(${badge.id})" title="${escapeHtml(badge.name)}">
+                            <img src="${escapeHtml(badge.image_url)}" alt="${escapeHtml(badge.name)}" onerror="this.parentElement.style.display='none'">
                         </div>
                     `).join('');
                     

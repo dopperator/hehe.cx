@@ -847,6 +847,16 @@
             youtube: '/src/logos/youtube-512.png'
         };
 
+        // Escape text for HTML element content and quoted attributes
+        function escapeHtml(text) {
+            return String(text ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        // Links may only point at http(s) URLs
+        function safeUrl(url) {
+            return /^https?:\/\//i.test(String(url || '')) ? url : '#';
+        }
+
         function getPlatformIcon(platform) {
             const logo = platformLogos[platform];
             if (logo) {
@@ -952,7 +962,7 @@
                 const initial = (user.display_name || user.username)[0].toUpperCase();
                 
                 if (user.avatar) {
-                    avatar.innerHTML = `<img src="${getImageUrl(user.avatar)}" alt="${user.display_name || user.username}">`;
+                    avatar.innerHTML = `<img src="${escapeHtml(getImageUrl(user.avatar))}" alt="${escapeHtml(user.display_name || user.username)}">`;
                 } else {
                     document.getElementById('avatarInitial').textContent = initial;
                 }
@@ -1040,9 +1050,9 @@
                 // Links
                 const linksContainer = document.getElementById('links');
                 linksContainer.innerHTML = links.map(link => `
-                    <a href="${link.url}" class="link-button" target="_blank" rel="noopener noreferrer">
+                    <a href="${escapeHtml(safeUrl(link.url))}" class="link-button" target="_blank" rel="noopener noreferrer">
                         <span class="link-icon">${getPlatformIcon(link.platform)}</span>
-                        <span class="link-text">${link.platform}</span>
+                        <span class="link-text">${escapeHtml(link.platform)}</span>
                         <svg class="link-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="9 18 15 12 9 6"/>
                         </svg>
