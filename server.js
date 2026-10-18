@@ -21,7 +21,15 @@ const UPLOAD_LIMITS = {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SESSION_SECRET = process.env.SESSION_SECRET || 'hehecx-dev-secret-change-in-production';
+// No hardcoded fallback: a secret published in the source would let anyone forge session cookies
+const SESSION_SECRET = process.env.SESSION_SECRET || (() => {
+    if (process.env.NODE_ENV === 'production') {
+        console.error('❌ SESSION_SECRET must be set in production');
+        process.exit(1);
+    }
+    console.log('⚠️ SESSION_SECRET not set - using a random secret (sessions reset on restart)');
+    return require('crypto').randomBytes(32).toString('hex');
+})();
 
 // Email configuration
 const EMAIL_USER = process.env.EMAIL_USER || 'lol@hehe.cx';
